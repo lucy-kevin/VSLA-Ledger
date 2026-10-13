@@ -87,3 +87,12 @@ pubspec.lock
 
 # Context (private project state)
 context.md
+
+# Secrets and local server data (from the handover kit)
+.env.*
+key.properties
+lib/firebase_options.dart
+server/pocketbase/pb_data/
+server/pocketbase/pocketbase
+server/pocketbase/pocketbase.exe
+android/local.properties

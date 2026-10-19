@@ -64,7 +64,7 @@ class LedgerRepository {
     type: EntryType.repayment,
     amountUgx: amountUgx,
     loanId: loanId,
-    checkBeforeSaving: () => _checkLoanCanBeRepaid(loanId, memberId),
+    checkBeforeSaving: () => _checkLoanCanBeRepaid(loanId, memberId, amountUgx),
   );
 
   /// Cancels a wrong entry by adding a correction that points at it.
@@ -134,7 +134,11 @@ class LedgerRepository {
     }
   }
 
-  Future<void> _checkLoanCanBeRepaid(String loanId, String memberId) async {
+  Future<void> _checkLoanCanBeRepaid(
+    String loanId,
+    String memberId,
+    int amountUgx,
+  ) async {
     final loan = await _db.ledgerDao.getEntry(loanId);
     if (loan == null) throw const LedgerRuleBroken(LedgerRule.entryNotFound);
     if (loan.type != EntryType.loan || loan.memberId != memberId) {
@@ -142,6 +146,14 @@ class LedgerRepository {
     }
     if (await _db.ledgerDao.isCancelled(loan.id)) {
       throw const LedgerRuleBroken(LedgerRule.loanIsCancelled);
+    }
+
+    var stillOwed = loan.amountUgx;
+    for (final repayment in await _repaymentsStillCounting(loan.id)) {
+      stillOwed -= repayment.amountUgx;
+    }
+    if (amountUgx > stillOwed) {
+      throw const LedgerRuleBroken(LedgerRule.repaymentMoreThanOwed);
     }
   }
 
@@ -153,17 +165,20 @@ class LedgerRepository {
       throw const LedgerRuleBroken(LedgerRule.alreadyCancelled);
     }
     if (original.type == EntryType.loan &&
-        await _hasRepaymentsStillCounting(original.id)) {
+        (await _repaymentsStillCounting(original.id)).isNotEmpty) {
       throw const LedgerRuleBroken(LedgerRule.loanHasRepayments);
     }
   }
 
-  // Repayments that were themselves cancelled no longer count, so a loan
-  // whose repayments have all been cancelled can be cancelled too.
-  Future<bool> _hasRepaymentsStillCounting(String loanId) async {
+  // Repayments that were themselves cancelled no longer count: they do not
+  // reduce what is owed, and they do not stop the loan being cancelled.
+  Future<List<LedgerEntry>> _repaymentsStillCounting(String loanId) async {
+    final counting = <LedgerEntry>[];
     for (final repayment in await _db.ledgerDao.getRepaymentsForLoan(loanId)) {
-      if (!await _db.ledgerDao.isCancelled(repayment.id)) return true;
+      if (!await _db.ledgerDao.isCancelled(repayment.id)) {
+        counting.add(repayment);
+      }
     }
-    return false;
+    return counting;
   }
 }

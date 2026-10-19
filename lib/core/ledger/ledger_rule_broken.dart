@@ -18,6 +18,9 @@ enum LedgerRule {
   /// A cancelled loan cannot be repaid.
   loanIsCancelled,
 
+  /// A repayment cannot be more than what is still owed on the loan.
+  repaymentMoreThanOwed,
+
   /// The entry has already been cancelled.
   alreadyCancelled,
 

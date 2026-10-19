@@ -169,6 +169,36 @@ void main() {
       );
     });
 
+    test('paying back exactly what is owed clears the loan', () async {
+      final loan = await lend(50000);
+      await repay(loan.id, 20000);
+
+      await repay(loan.id, 30000);
+
+      expect(await loansOutstandingOf(sarah), 0);
+    });
+
+    test('paying back more than is owed is refused', () async {
+      final loan = await lend(50000);
+      await repay(loan.id, 20000);
+
+      await expectLater(
+        repay(loan.id, 30001),
+        breaks(LedgerRule.repaymentMoreThanOwed),
+      );
+      expect(await loansOutstandingOf(sarah), 30000);
+    });
+
+    test('a cancelled repayment no longer reduces what is owed', () async {
+      final loan = await lend(50000);
+      final mistake = await repay(loan.id, 50000);
+      await ledger.cancelEntry(mistake.id);
+
+      await repay(loan.id, 50000);
+
+      expect(await loansOutstandingOf(sarah), 0);
+    });
+
     test('repaying a cancelled loan is refused', () async {
       final loan = await lend(50000);
       await ledger.cancelEntry(loan.id);

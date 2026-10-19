@@ -26,6 +26,32 @@ class LedgerDao extends DatabaseAccessor<AppDatabase> with _$LedgerDaoMixin {
     onConflict: DoNothing(target: [ledgerEntries.id]),
   );
 
+  Future<LedgerEntry?> getEntry(String id) => (select(
+    ledgerEntries,
+  )..where((e) => e.id.equals(id))).getSingleOrNull();
+
+  /// Whether any correction points at this entry.
+  Future<bool> isCancelled(String entryId) async {
+    final correction =
+        await (select(ledgerEntries)
+              ..where(
+                (e) =>
+                    e.type.equalsValue(EntryType.correction) &
+                    e.correctsEntryId.equals(entryId),
+              )
+              ..limit(1))
+            .getSingleOrNull();
+    return correction != null;
+  }
+
+  Future<List<LedgerEntry>> getRepaymentsForLoan(String loanId) =>
+      (select(ledgerEntries)..where(
+            (e) =>
+                e.type.equalsValue(EntryType.repayment) &
+                e.loanId.equals(loanId),
+          ))
+          .get();
+
   /// Every entry for a member, newest first, including corrections and the
   /// entries they cancel, so the history reads like the paper ledger.
   Stream<List<LedgerEntry>> watchEntriesForMember(String memberId) =>

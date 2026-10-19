@@ -17,6 +17,8 @@ class GroupDao extends DatabaseAccessor<AppDatabase> with _$GroupDaoMixin {
     onConflict: DoNothing(target: [groups.id]),
   );
 
+  Future<List<Group>> getAllGroups() => select(groups).get();
+
   Stream<List<Group>> watchAllGroups() =>
       (select(groups)..orderBy([(g) => OrderingTerm.asc(g.name)])).watch();
 

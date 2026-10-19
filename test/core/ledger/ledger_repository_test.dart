@@ -75,7 +75,7 @@ void main() {
       final entry = await contribute(10000);
 
       expect(await entriesOf(sarah), [entry]);
-      final queued = (await db.outboxDao.nextBatch()).single;
+      final queued = (await db.outboxDao.nextBatch(limit: 50)).single;
       expect(queued.entityType, OutboxEntityType.ledgerEntry);
       expect(queued.entityId, entry.id);
       expect(
@@ -111,7 +111,7 @@ void main() {
       await expectLater(contribute(0), breaks(LedgerRule.amountMustBePositive));
 
       expect(await entriesOf(sarah), isEmpty);
-      expect(await db.outboxDao.nextBatch(), isEmpty);
+      expect(await db.outboxDao.nextBatch(limit: 50), isEmpty);
     });
   });
 
@@ -232,7 +232,7 @@ void main() {
       final correction = await ledger.cancelEntry(wrong.id);
 
       expect(
-        (await db.outboxDao.nextBatch()).map((item) => item.entityId),
+        (await db.outboxDao.nextBatch(limit: 50)).map((item) => item.entityId),
         [wrong.id, correction.id],
       );
     });

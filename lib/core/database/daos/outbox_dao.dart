@@ -26,7 +26,7 @@ class OutboxDao extends DatabaseAccessor<AppDatabase> with _$OutboxDaoMixin {
 
   /// The oldest items first, so the server sees changes in the order they
   /// were made.
-  Future<List<OutboxItem>> nextBatch({int limit = 50}) =>
+  Future<List<OutboxItem>> nextBatch({required int limit}) =>
       (select(outbox)
             ..orderBy([(o) => OrderingTerm.asc(o.id)])
             ..limit(limit))

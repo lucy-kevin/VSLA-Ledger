@@ -1,0 +1,97 @@
+{
+  "@@locale": "en",
+
+  "appTitle": "VSLA Ledger",
+
+  "amountUgx": "UGX {amount}",
+  "@amountUgx": {
+    "description": "A money amount in whole Uganda shillings.",
+    "placeholders": { "amount": { "type": "int", "format": "decimalPattern" } }
+  },
+  "saveButton": "Save",
+  "loadError": "Could not load this screen. Please try again.",
+
+  "groupsTitle": "Your groups",
+  "noGroupsYet": "No groups yet. Create one to start recording savings.",
+  "createGroupButton": "Create a group",
+  "createGroupTitle": "New group",
+  "groupNameLabel": "Group name",
+  "groupNameRequired": "Enter the group's name",
+
+  "joinCode": "Join code: {code}",
+  "@joinCode": {
+    "description": "The short code another treasurer types to join this group.",
+    "placeholders": { "code": { "type": "String" } }
+  },
+  "groupSavingsLabel": "Group savings",
+  "groupLoansLabel": "Loans out",
+  "recordsWaiting": "{count, plural, =0{Everything is synced} =1{1 record waiting to sync} other{{count} records waiting to sync}}",
+  "@recordsWaiting": {
+    "description": "How many records are saved on this phone but not yet on the server.",
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "syncNowButton": "Sync now",
+  "syncDone": "Everything is synced.",
+  "syncFailed": "Could not reach the server. Your records are safe on this phone.",
+  "membersTitle": "Members",
+  "noMembersYet": "No members yet. Add the first one.",
+  "addMemberButton": "Add member",
+
+  "addMemberTitle": "New member",
+  "memberNameLabel": "Name",
+  "memberNameRequired": "Enter the member's name",
+  "memberPhoneLabel": "Phone number (optional)",
+
+  "savingsLabel": "Savings",
+  "loansOutstandingLabel": "Loans to repay",
+  "historyTitle": "History",
+  "noEntriesYet": "No records yet.",
+  "recordContributionButton": "Savings",
+  "issueLoanButton": "Loan",
+  "recordRepaymentButton": "Repayment",
+
+  "entryTypeContribution": "Savings",
+  "entryTypeLoan": "Loan",
+  "entryTypeRepayment": "Repayment",
+  "entryTypeCorrection": "Cancellation",
+  "entryDate": "{date}",
+  "@entryDate": {
+    "placeholders": { "date": { "type": "DateTime", "format": "yMMMd" } }
+  },
+  "statusSavedOnPhone": "Saved on phone",
+  "statusSynced": "Synced",
+  "entryCancelled": "Cancelled",
+
+  "cancelEntryAction": "Cancel this entry",
+  "cancelEntryQuestion": "Cancel this entry of UGX {amount}? It stays in the history, crossed out. Then record the right amount.",
+  "@cancelEntryQuestion": {
+    "placeholders": { "amount": { "type": "int", "format": "decimalPattern" } }
+  },
+  "cancelEntryConfirm": "Cancel entry",
+  "keepEntryButton": "Keep it",
+
+  "recordContributionTitle": "Record savings",
+  "issueLoanTitle": "Give a loan",
+  "recordRepaymentTitle": "Record a repayment",
+  "amountLabel": "Amount (UGX)",
+  "amountRequired": "Enter an amount",
+  "whichLoanLabel": "Which loan?",
+  "loanOption": "Loan of UGX {amount}, UGX {owed} still owed",
+  "@loanOption": {
+    "placeholders": {
+      "amount": { "type": "int", "format": "decimalPattern" },
+      "owed": { "type": "int", "format": "decimalPattern" }
+    }
+  },
+  "noOpenLoans": "This member has no loan to repay.",
+
+  "ruleAmountMustBePositive": "The amount must be more than zero.",
+  "ruleAmountTooLarge": "That amount is too large. Check for an extra zero.",
+  "ruleEntryNotFound": "That record could not be found.",
+  "ruleNotALoanOfThisMember": "That loan does not belong to this member.",
+  "ruleLoanIsCancelled": "That loan was cancelled.",
+  "ruleRepaymentMoreThanOwed": "That is more than the member still owes on this loan.",
+  "ruleAlreadyCancelled": "That entry is already cancelled.",
+  "ruleCannotCancelACorrection": "A cancellation cannot be cancelled. Record the right entry instead.",
+  "ruleLoanHasRepayments": "This loan has repayments. Cancel the repayments first."
+}

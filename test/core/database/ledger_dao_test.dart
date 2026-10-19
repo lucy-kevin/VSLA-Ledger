@@ -177,9 +177,14 @@ void main() {
           await db.ledgerDao.watchEntriesForMember(sarah).first,
           contains(wrong),
         );
+        final history = await db.ledgerDao.watchHistoryForMember(sarah).first;
+        final wrongLine = history.singleWhere(
+          (line) => line.entry.id == wrong.id,
+        );
+        expect(wrongLine.isCancelled, isTrue);
         expect(
-          await db.ledgerDao.watchCancelledEntryIds(groupId).first,
-          {wrong.id},
+          history.where((line) => line.entry.id != wrong.id).single.isCancelled,
+          isFalse,
         );
       },
     );

@@ -17,15 +17,18 @@ class SyncService {
   final AppDatabase _db;
   final LedgerRemote _remote;
 
-  Future<void>? _running;
+  Future<bool>? _running;
   bool _runAgain = false;
 
   /// Runs one sync. Only one sync runs at a time.
   ///
+  /// Returns true if everything was sent and fetched, false if the server
+  /// could not be reached or refused something. Either way nothing is lost.
+  ///
   /// If a sync is already running, this waits for it, and makes it go round
   /// once more at the end, so a record saved during a sync is not left
   /// behind until the next one.
-  Future<void> run() {
+  Future<bool> run() {
     final running = _running;
     if (running != null) {
       _runAgain = true;
@@ -34,12 +37,13 @@ class SyncService {
     return _running = _runUntilNothingNew().whenComplete(() => _running = null);
   }
 
-  Future<void> _runUntilNothingNew() async {
+  Future<bool> _runUntilNothingNew() async {
+    bool succeeded;
     do {
       _runAgain = false;
-      final pushedEverything = await _push();
-      if (pushedEverything) await _pull();
+      succeeded = await _push() && await _pull();
     } while (_runAgain);
+    return succeeded;
   }
 
   /// Returns false if the server could not be reached or refused something.
@@ -68,13 +72,16 @@ class SyncService {
     }
   }
 
-  Future<void> _pull() async {
+  /// Returns false if any group could not be fetched.
+  Future<bool> _pull() async {
+    var succeeded = true;
     for (final group in await _db.groupDao.getAllGroups()) {
-      await _pullGroup(group.id);
+      if (!await _pullGroup(group.id)) succeeded = false;
     }
+    return succeeded;
   }
 
-  Future<void> _pullGroup(String groupId) async {
+  Future<bool> _pullGroup(String groupId) async {
     final key = 'lastPulledAt:$groupId';
     final saved = await _db.syncStateDao.read(key);
     final since = saved == null ? null : DateTime.parse(saved);
@@ -84,7 +91,7 @@ class SyncService {
       result = await _remote.pullSince(groupId, since);
     } on Exception {
       // Keep lastPulledAt as it was; the next sync asks again.
-      return;
+      return false;
     }
 
     // Records we already have are skipped by id, so pulling the same record
@@ -105,5 +112,6 @@ class SyncService {
         result.serverTime.toUtc().toIso8601String(),
       );
     });
+    return true;
   }
 }

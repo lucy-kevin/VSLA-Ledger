@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:uuid/uuid.dart';
 import 'package:vsla_ledger/core/database/app_database.dart';
 import 'package:vsla_ledger/core/ledger/ledger_rule_broken.dart';
+import 'package:vsla_ledger/core/ledger/loan_status.dart';
 import 'package:vsla_ledger/core/models/entry_type.dart';
 import 'package:vsla_ledger/core/models/ledger_entry.dart';
 import 'package:vsla_ledger/core/models/outbox_item.dart';
@@ -144,15 +145,11 @@ class LedgerRepository {
     if (loan.type != EntryType.loan || loan.memberId != memberId) {
       throw const LedgerRuleBroken(LedgerRule.notALoanOfThisMember);
     }
-    if (await _db.ledgerDao.isCancelled(loan.id)) {
+    final status = await _statusOf(loan);
+    if (status == null) {
       throw const LedgerRuleBroken(LedgerRule.loanIsCancelled);
     }
-
-    var stillOwed = loan.amountUgx;
-    for (final repayment in await _repaymentsStillCounting(loan.id)) {
-      stillOwed -= repayment.amountUgx;
-    }
-    if (amountUgx > stillOwed) {
+    if (amountUgx > status.owedUgx) {
       throw const LedgerRuleBroken(LedgerRule.repaymentMoreThanOwed);
     }
   }
@@ -165,20 +162,17 @@ class LedgerRepository {
       throw const LedgerRuleBroken(LedgerRule.alreadyCancelled);
     }
     if (original.type == EntryType.loan &&
-        (await _repaymentsStillCounting(original.id)).isNotEmpty) {
+        ((await _statusOf(original))?.hasRepayments ?? false)) {
       throw const LedgerRuleBroken(LedgerRule.loanHasRepayments);
     }
   }
 
-  // Repayments that were themselves cancelled no longer count: they do not
-  // reduce what is owed, and they do not stop the loan being cancelled.
-  Future<List<LedgerEntry>> _repaymentsStillCounting(String loanId) async {
-    final counting = <LedgerEntry>[];
-    for (final repayment in await _db.ledgerDao.getRepaymentsForLoan(loanId)) {
-      if (!await _db.ledgerDao.isCancelled(repayment.id)) {
-        counting.add(repayment);
-      }
-    }
-    return counting;
+  /// How much is owed on [loan], worked out the same way the screens do.
+  /// Null if the loan has been cancelled.
+  Future<LoanStatus?> _statusOf(LedgerEntry loan) async {
+    final entries = await _db.ledgerDao.getEntriesForMember(loan.memberId);
+    return loanStatuses(
+      entries,
+    ).where((status) => status.loan.id == loan.id).firstOrNull;
   }
 }

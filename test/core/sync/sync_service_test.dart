@@ -89,7 +89,7 @@ void main() {
       {for (final entry in recorded) entry.id},
     );
 
-    await phone.sync.run();
+    expect(await phone.sync.run(), isFalse);
 
     final stillWaiting = await phone.db.outboxDao.nextBatch(limit: 50);
     expect(stillWaiting, hasLength(5));
@@ -98,7 +98,7 @@ void main() {
     expect(server.entries, isEmpty);
 
     server.offline = false;
-    await phone.sync.run();
+    expect(await phone.sync.run(), isTrue);
 
     expect(await phone.waitingToSync(), isEmpty);
     expect(
@@ -178,7 +178,7 @@ void main() {
     final before = await phone.db.syncStateDao.read('lastPulledAt:$groupId');
 
     server.offline = true;
-    await phone.sync.run();
+    expect(await phone.sync.run(), isFalse);
 
     expect(
       await phone.db.syncStateDao.read('lastPulledAt:$groupId'),

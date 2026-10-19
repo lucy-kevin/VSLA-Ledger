@@ -53,6 +53,8 @@ launch.json
 **/*.config.dart
 **/*.freezed.dart
 **/*.pb.dart
+# Made by `flutter pub get` from lib/l10n/app_en.arb
+lib/l10n/app_localizations*.dart
 
 # Local environment and secrets
 .env

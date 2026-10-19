@@ -2,6 +2,7 @@ import 'package:drift/drift.dart';
 import 'package:vsla_ledger/core/database/app_database.dart';
 import 'package:vsla_ledger/core/database/tables.dart';
 import 'package:vsla_ledger/core/models/balance.dart';
+import 'package:vsla_ledger/core/models/entry_line.dart';
 import 'package:vsla_ledger/core/models/entry_type.dart';
 import 'package:vsla_ledger/core/models/ledger_entry.dart';
 
@@ -11,7 +12,7 @@ part 'ledger_dao.g.dart';
 ///
 /// There is deliberately no update or delete method here. Mistakes are fixed
 /// by appending a correction entry that cancels the wrong one.
-@DriftAccessor(tables: [LedgerEntries])
+@DriftAccessor(tables: [LedgerEntries, Outbox])
 class LedgerDao extends DatabaseAccessor<AppDatabase> with _$LedgerDaoMixin {
   LedgerDao(super.attachedDatabase);
 
@@ -44,13 +45,10 @@ class LedgerDao extends DatabaseAccessor<AppDatabase> with _$LedgerDaoMixin {
     return correction != null;
   }
 
-  Future<List<LedgerEntry>> getRepaymentsForLoan(String loanId) =>
-      (select(ledgerEntries)..where(
-            (e) =>
-                e.type.equalsValue(EntryType.repayment) &
-                e.loanId.equals(loanId),
-          ))
-          .get();
+  /// All of a member's entries, including corrections.
+  Future<List<LedgerEntry>> getEntriesForMember(String memberId) => (select(
+    ledgerEntries,
+  )..where((e) => e.memberId.equals(memberId))).get();
 
   /// Every entry for a member, newest first, including corrections and the
   /// entries they cancel, so the history reads like the paper ledger.
@@ -60,19 +58,38 @@ class LedgerDao extends DatabaseAccessor<AppDatabase> with _$LedgerDaoMixin {
             ..orderBy([(e) => OrderingTerm.desc(e.createdAt)]))
           .watch();
 
-  /// Ids of entries that a correction has cancelled, so the screen can show
-  /// them crossed out.
-  Stream<Set<String>> watchCancelledEntryIds(String groupId) {
-    final query = selectOnly(ledgerEntries)
-      ..addColumns([ledgerEntries.correctsEntryId])
-      ..where(
-        ledgerEntries.groupId.equals(groupId) &
-            ledgerEntries.type.equalsValue(EntryType.correction),
-      );
+  /// A member's history for the screen: each entry, whether it has been
+  /// cancelled, and whether it is still waiting to sync.
+  ///
+  /// One query watches both the ledger and the outbox, so a line flips from
+  /// "Saved on phone" to "Synced" on its own when the sync finishes.
+  Stream<List<EntryLine>> watchHistoryForMember(String memberId) {
+    final corrections = alias(ledgerEntries, 'corrections');
+    final isCancelled = existsQuery(
+      select(corrections)..where(
+        (c) =>
+            c.type.equalsValue(EntryType.correction) &
+            c.correctsEntryId.equalsExp(ledgerEntries.id),
+      ),
+    );
+    final isWaitingToSync = existsQuery(
+      select(outbox)..where((o) => o.entityId.equalsExp(ledgerEntries.id)),
+    );
+
+    final query =
+        select(ledgerEntries).addColumns([isCancelled, isWaitingToSync])
+          ..where(ledgerEntries.memberId.equals(memberId))
+          ..orderBy([OrderingTerm.desc(ledgerEntries.createdAt)]);
+
     return query.watch().map(
-      (rows) => {
-        for (final row in rows) row.read(ledgerEntries.correctsEntryId)!,
-      },
+      (rows) => [
+        for (final row in rows)
+          EntryLine(
+            entry: row.readTable(ledgerEntries),
+            isCancelled: row.read(isCancelled)!,
+            isWaitingToSync: row.read(isWaitingToSync)!,
+          ),
+      ],
     );
   }
 

@@ -80,7 +80,6 @@ Thumbs.db
 build/
 .flutter-plugins-dependencies
 .pub-cache/
-pubspec.lock
 
 # Plans (private)
 /plans/

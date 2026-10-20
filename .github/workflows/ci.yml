@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    # A full run takes a few minutes. If a step hangs, fail clearly instead
+    # of running for hours.
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      # Pinned to the version the project is tested with, so CI builds
+      # exactly what contributors build. Update it on purpose, together with
+      # pubspec.lock, never by surprise.
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.38.9
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Generate code
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Check formatting
+        run: dart format --output=none --set-exit-if-changed lib test
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Vendor packages only in lib/remote/ and lib/peer/
+        run: |
+          if grep -rnE "package:(pocketbase|cloud_firestore|firebase_[a-z_]+|supabase_flutter|nearby_connections)/" lib --include=*.dart \
+             | grep -vE "^lib/(remote|peer)/" \
+             | grep -v "^lib/main.dart"; then
+            echo "::error::Vendor packages may only be imported in lib/remote/ or lib/peer/ (see CLAUDE.md §3 rule 7)."
+            exit 1
+          fi
+
+      - name: Test
+        run: flutter test
+
+      - name: Build debug APK
+        run: flutter build apk --debug

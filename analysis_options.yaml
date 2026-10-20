@@ -1,0 +1,13 @@
+include: package:very_good_analysis/analysis_options.yaml
+
+analyzer:
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+    - "lib/l10n/app_localizations*.dart"
+    - "build/**"
+
+linter:
+  rules:
+    # Public API docs are encouraged, but not required on every member while the app is young.
+    public_member_api_docs: false

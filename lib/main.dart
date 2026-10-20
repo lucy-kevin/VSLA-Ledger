@@ -8,6 +8,7 @@ import 'package:vsla_ledger/core/providers.dart';
 import 'package:vsla_ledger/core/sync/connection.dart';
 import 'package:vsla_ledger/core/sync/ledger_remote.dart';
 import 'package:vsla_ledger/remote/fake_remote.dart';
+import 'package:vsla_ledger/remote/firebase_remote.dart';
 import 'package:vsla_ledger/remote/pocketbase_remote.dart';
 
 /// Which server to use: `flutter run --dart-define=BACKEND=fake`.
@@ -44,8 +45,10 @@ Future<void> main() async {
 Future<LedgerRemote> remoteFor(String backend) async => switch (backend) {
   'fake' => await fakeThatFollowsTheConnection(Connectivity()),
   'pocketbase' => PocketBaseRemote.connect(pocketBaseUrl),
+  // Needs android/app/google-services.json: see server/firebase/README.md.
+  'firebase' => await FirebaseRemote.connect(),
   _ => throw UnsupportedError(
-    'Unknown BACKEND "$backend". Use fake or pocketbase.',
+    'Unknown BACKEND "$backend". Use fake, pocketbase or firebase.',
   ),
 };
 

@@ -6,6 +6,7 @@ import 'package:vsla_ledger/core/models/ledger_entry.dart';
 import 'package:vsla_ledger/core/models/member.dart';
 import 'package:vsla_ledger/core/models/outbox_item.dart';
 import 'package:vsla_ledger/core/sync/ledger_remote.dart';
+import 'package:vsla_ledger/core/sync/push_with_fallback.dart';
 
 /// Syncs with a self-hosted PocketBase server.
 ///
@@ -29,32 +30,11 @@ class PocketBaseRemote implements LedgerRemote {
   };
 
   @override
-  Future<Set<int>> push(List<OutboxItem> items) async {
-    if (items.isEmpty) return {};
-    try {
-      await _sendBatch(items);
-      return {for (final item in items) item.id};
-    } on ClientException catch (error) {
-      if (!_serverRefusedSomething(error)) rethrow;
-      // A batch is all or nothing: one refused record fails the whole batch.
-      // Send them one at a time, so one bad record cannot hold up the others.
-      return _pushOneByOne(items);
-    }
-  }
-
-  Future<Set<int>> _pushOneByOne(List<OutboxItem> items) async {
-    final accepted = <int>{};
-    for (final item in items) {
-      try {
-        await _sendBatch([item]);
-        accepted.add(item.id);
-      } on ClientException catch (error) {
-        if (!_serverRefusedSomething(error)) rethrow;
-        // Left out of `accepted`: the sync service marks it as failed.
-      }
-    }
-    return accepted;
-  }
+  Future<Set<int>> push(List<OutboxItem> items) => pushWithFallback(
+    items,
+    send: _sendBatch,
+    isRefusal: _serverRefusedSomething,
+  );
 
   Future<void> _sendBatch(List<OutboxItem> items) async {
     final batch = _pb.createBatch();
@@ -69,8 +49,10 @@ class PocketBaseRemote implements LedgerRemote {
   /// A 4xx answer means the server looked at the records and refused one.
   /// Anything else (no connection, timeout, server error) means "try the
   /// whole thing again later".
-  bool _serverRefusedSomething(ClientException error) =>
-      error.statusCode >= 400 && error.statusCode < 500;
+  bool _serverRefusedSomething(Object error) =>
+      error is ClientException &&
+      error.statusCode >= 400 &&
+      error.statusCode < 500;
 
   Map<String, dynamic> _toServer(OutboxItem item) {
     final json = jsonDecode(item.payloadJson) as Map<String, dynamic>;

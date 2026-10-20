@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:vsla_ledger/core/clock.dart';
 import 'package:vsla_ledger/core/models/group.dart';
 import 'package:vsla_ledger/core/models/ledger_entry.dart';
 import 'package:vsla_ledger/core/models/member.dart';
@@ -17,8 +18,7 @@ class FakeServerOffline implements Exception {
 /// It lets anyone run and test the whole app with no server and no
 /// internet. Set [offline] to true to act like airplane mode.
 class FakeLedgerRemote implements LedgerRemote {
-  FakeLedgerRemote({DateTime Function()? now})
-    : _now = now ?? (() => DateTime.now().toUtc());
+  FakeLedgerRemote({DateTime Function()? now}) : _now = now ?? nowUtc;
 
   final DateTime Function() _now;
 
@@ -61,6 +61,15 @@ class FakeLedgerRemote implements LedgerRemote {
       }
     }
     return {for (final item in items) item.id};
+  }
+
+  @override
+  Future<Group?> findGroupByJoinCode(String joinCode) async {
+    if (offline) throw FakeServerOffline();
+    for (final stored in _groups.values) {
+      if (stored.record.joinCode == joinCode) return stored.record;
+    }
+    return null;
   }
 
   @override

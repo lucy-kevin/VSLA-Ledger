@@ -3,6 +3,7 @@ import 'package:vsla_ledger/core/models/entry_type.dart';
 import 'package:vsla_ledger/features/groups/create_group_screen.dart';
 import 'package:vsla_ledger/features/groups/group_screen.dart';
 import 'package:vsla_ledger/features/groups/groups_screen.dart';
+import 'package:vsla_ledger/features/groups/join_group_screen.dart';
 import 'package:vsla_ledger/features/ledger/record_entry_screen.dart';
 import 'package:vsla_ledger/features/members/add_member_screen.dart';
 import 'package:vsla_ledger/features/members/member_screen.dart';
@@ -11,6 +12,7 @@ import 'package:vsla_ledger/features/members/member_screen.dart';
 ///
 ///   /                                        your groups
 ///   /groups/new                              create a group
+///   /groups/join                             join a group by its code
 ///   /groups/:groupId                         one group and its members
 ///   /groups/:groupId/members/new             add a member
 ///   /groups/:groupId/members/:memberId       one member's balance and history
@@ -21,10 +23,15 @@ GoRouter createRouter() => GoRouter(
       path: '/',
       builder: (context, state) => const GroupsScreen(),
       routes: [
-        // Listed before 'groups/:groupId' so "new" is not read as an id.
+        // Listed before 'groups/:groupId' so "new" and "join" are not read as
+        // group ids.
         GoRoute(
           path: 'groups/new',
           builder: (context, state) => const CreateGroupScreen(),
+        ),
+        GoRoute(
+          path: 'groups/join',
+          builder: (context, state) => const JoinGroupScreen(),
         ),
         GoRoute(
           path: 'groups/:groupId',

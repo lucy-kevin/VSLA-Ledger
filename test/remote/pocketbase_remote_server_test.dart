@@ -151,4 +151,19 @@ Future<void> main() async {
       10000,
     );
   }, skip: skip);
+
+  test('a group is found by its join code, and only that group', () async {
+    final group = await phoneA.groups.createGroup('Tukolere Wamu');
+    await phoneA.sync.run();
+    final remote = PocketBaseRemote.connect(serverUrl);
+
+    expect(await remote.findGroupByJoinCode(group.joinCode), group);
+  }, skip: skip);
+
+  test('an unknown join code finds nothing', () async {
+    final remote = PocketBaseRemote.connect(serverUrl);
+
+    // Contains 0 and 1, which join codes never use, so no group has it.
+    expect(await remote.findGroupByJoinCode('ZZ0Z1Z'), isNull);
+  }, skip: skip);
 }

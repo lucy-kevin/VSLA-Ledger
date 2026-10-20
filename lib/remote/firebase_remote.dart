@@ -79,6 +79,18 @@ class FirebaseRemote implements LedgerRemote {
   }
 
   @override
+  Future<Group?> findGroupByJoinCode(String joinCode) async {
+    final snapshot = await _db
+        .collection('groups')
+        .where('joinCode', isEqualTo: joinCode)
+        .limit(1)
+        .get()
+        .timeout(timeout);
+    if (snapshot.docs.isEmpty) return null;
+    return Group.fromJson(_fromServer(snapshot.docs.single.data()));
+  }
+
+  @override
   Future<PullResult> pullSince(String groupId, DateTime? since) async {
     final group = await _db
         .collection('groups')

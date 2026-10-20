@@ -67,6 +67,9 @@ class SlowRemote implements LedgerRemote {
   @override
   Future<PullResult> pullSince(String groupId, DateTime? since) =>
       inner.pullSince(groupId, since);
+  @override
+  Future<Group?> findGroupByJoinCode(String joinCode) =>
+      inner.findGroupByJoinCode(joinCode);
 }
 
 void main() {

@@ -61,6 +61,19 @@ class PocketBaseRemote implements LedgerRemote {
   }
 
   @override
+  Future<Group?> findGroupByJoinCode(String joinCode) async {
+    final result = await _pb
+        .collection('groups')
+        .getList(
+          perPage: 1,
+          filter: _pb.filter('joinCode = {:code}', {'code': joinCode}),
+          sort: 'created',
+        );
+    if (result.items.isEmpty) return null;
+    return Group.fromJson(_fromServer(result.items.single));
+  }
+
+  @override
   Future<PullResult> pullSince(String groupId, DateTime? since) async {
     final updatedSince = since == null ? '' : ' && updated >= {:since}';
     // `?since` leaves the key out entirely when since is null.

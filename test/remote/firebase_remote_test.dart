@@ -160,4 +160,14 @@ void main() {
     expect(result.groups.map((g) => g.id), [ours.id]);
     expect(result.members, isEmpty);
   });
+
+  test('a group is found by its join code', () async {
+    final group = await phoneA.groups.createGroup('Tukolere Wamu');
+    await phoneA.groups.createGroup('Another group');
+    await phoneA.sync.run();
+    final remote = FirebaseRemote(firestore);
+
+    expect(await remote.findGroupByJoinCode(group.joinCode), group);
+    expect(await remote.findGroupByJoinCode('ZZ0Z1Z'), isNull);
+  });
 }

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:uuid/uuid.dart';
+import 'package:vsla_ledger/core/clock.dart';
 import 'package:vsla_ledger/core/database/app_database.dart';
 import 'package:vsla_ledger/core/models/group.dart';
 import 'package:vsla_ledger/core/models/member.dart';
@@ -23,7 +24,7 @@ class GroupRepository {
     String Function()? newId,
     Random? random,
   }) : _db = db,
-       _now = now ?? (() => DateTime.now().toUtc()),
+       _now = now ?? nowUtc,
        _newId = newId ?? const Uuid().v4,
        _random = random ?? Random.secure();
 
@@ -92,6 +93,16 @@ class GroupRepository {
     return trimmed;
   }
 }
+
+/// Cleans up a code as a person typed it: ignores case, spaces and dashes,
+/// so "tkw 482" and "TKW-482" both become "TKW482".
+String normalizeJoinCode(String typed) =>
+    typed.toUpperCase().replaceAll(RegExp(r'[\s-]'), '');
+
+/// Whether [code] (already normalized) could be a join code at all.
+bool isValidJoinCode(String code) =>
+    code.length == joinCodeLength &&
+    code.split('').every(joinCodeAlphabet.contains);
 
 String makeJoinCode(Random random) => String.fromCharCodes([
   for (var i = 0; i < joinCodeLength; i++)

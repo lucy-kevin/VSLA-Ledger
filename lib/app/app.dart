@@ -18,8 +18,26 @@ class _VslaAppState extends ConsumerState<VslaApp> {
     withDemoScreens: ref.read(showDemoScreensProvider),
   );
 
+  late final AppLifecycleListener _lifecycle;
+
+  @override
+  void initState() {
+    super.initState();
+    _lifecycle = AppLifecycleListener(onResume: _onResume);
+  }
+
+  // The background sync uses its own connection to the database, so the
+  // screens are not told when it changes something. Coming back to the
+  // app, every screen reads the database again, and a sync starts.
+  void _onResume() {
+    final db = ref.read(appDatabaseProvider);
+    db.markTablesUpdated(db.allTables);
+    ref.read(syncTriggerProvider).appResumed();
+  }
+
   @override
   void dispose() {
+    _lifecycle.dispose();
     _router.dispose();
     super.dispose();
   }

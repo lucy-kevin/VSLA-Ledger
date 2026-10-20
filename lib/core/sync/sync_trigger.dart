@@ -34,6 +34,12 @@ class SyncTrigger {
     if (somethingNew && _online) _requestSync();
   }
 
+  /// The app came back to the screen. Anything saved while it was in the
+  /// background (and not yet sent) goes now, if the phone is online.
+  void appResumed() {
+    if (_online) _requestSync();
+  }
+
   /// Tell the trigger the phone's online status, now and on every change.
   void onlineChanged({required bool online}) {
     _online = online;

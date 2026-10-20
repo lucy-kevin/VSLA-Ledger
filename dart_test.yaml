@@ -1,0 +1,4 @@
+# Tests tagged "pocketbase" need a running PocketBase server
+# (see server/pocketbase/README.md). Without one they are skipped.
+tags:
+  pocketbase:

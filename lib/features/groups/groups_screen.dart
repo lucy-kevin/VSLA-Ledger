@@ -14,7 +14,16 @@ class GroupsScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: Text(l10n.groupsTitle)),
+      appBar: AppBar(
+        title: Text(l10n.groupsTitle),
+        actions: [
+          TextButton.icon(
+            onPressed: () => context.push('/groups/join'),
+            icon: const Icon(Icons.group_add),
+            label: Text(l10n.joinGroupButton),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push('/groups/new'),
         icon: const Icon(Icons.add),

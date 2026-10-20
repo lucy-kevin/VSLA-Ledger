@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:vsla_ledger/core/database/app_database.dart';
 import 'package:vsla_ledger/core/groups/group_repository.dart';
+import 'package:vsla_ledger/core/groups/join_group.dart';
 import 'package:vsla_ledger/core/ledger/ledger_repository.dart';
 import 'package:vsla_ledger/core/models/balance.dart';
 import 'package:vsla_ledger/core/models/entry_line.dart';
@@ -43,6 +44,13 @@ LedgerRepository ledgerRepository(Ref ref) => LedgerRepository(
 @Riverpod(keepAlive: true)
 GroupRepository groupRepository(Ref ref) =>
     GroupRepository(db: ref.watch(appDatabaseProvider));
+
+@Riverpod(keepAlive: true)
+GroupJoiner groupJoiner(Ref ref) => GroupJoiner(
+  db: ref.watch(appDatabaseProvider),
+  remote: ref.watch(ledgerRemoteProvider),
+  sync: ref.watch(syncServiceProvider),
+);
 
 /// Kept alive, because it remembers whether a sync is already running.
 @Riverpod(keepAlive: true)

@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:uuid/uuid.dart';
+import 'package:vsla_ledger/core/clock.dart';
 import 'package:vsla_ledger/core/database/app_database.dart';
 import 'package:vsla_ledger/core/ledger/ledger_rule_broken.dart';
 import 'package:vsla_ledger/core/ledger/loan_status.dart';
@@ -21,7 +22,7 @@ class LedgerRepository {
     String Function()? newId,
   }) : _db = db,
        _deviceId = deviceId,
-       _now = now ?? (() => DateTime.now().toUtc()),
+       _now = now ?? nowUtc,
        _newId = newId ?? const Uuid().v4;
 
   final AppDatabase _db;

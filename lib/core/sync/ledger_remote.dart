@@ -21,6 +21,13 @@ abstract interface class LedgerRemote {
   ///
   /// Throws if the server cannot be reached.
   Future<PullResult> pullSince(String groupId, DateTime? since);
+
+  /// Finds the group with this join code, or null if there is none.
+  ///
+  /// This is how a second phone joins a group. [joinCode] is already
+  /// cleaned up (see `normalizeJoinCode`). Throws if the server cannot be
+  /// reached.
+  Future<Group?> findGroupByJoinCode(String joinCode);
 }
 
 /// What a pull brings back from the server.

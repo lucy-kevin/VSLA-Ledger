@@ -1,0 +1,55 @@
+rules_version = '2';
+
+// Rules for the VSLA Ledger demo. Paste them in the Firebase console:
+// Firestore Database -> Rules -> Publish.
+//
+// DEMO ONLY: anyone with the app's config can read and add records. Use
+// demo data only. Adding login is a good first issue.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Every record's id is the UUID the phone made, and must be stored in
+    // the record too.
+    function idMatches(docId) {
+      return request.resource.data.id == docId;
+    }
+
+    match /groups/{groupId} {
+      allow read: if true;
+      allow create, update: if idMatches(groupId);
+      allow delete: if false;
+    }
+
+    match /members/{memberId} {
+      allow read: if true;
+      allow create, update: if idMatches(memberId);
+      allow delete: if false;
+    }
+
+    match /ledger_entries/{entryId} {
+      allow read: if true;
+
+      // Whole shillings, at least 1.
+      allow create: if idMatches(entryId)
+        && request.resource.data.amountUgx is int
+        && request.resource.data.amountUgx >= 1
+        && request.resource.data.type in
+             ['contribution', 'loan', 'repayment', 'correction'];
+
+      // Append-only. A phone retrying a push sends the same entry again,
+      // which is allowed. Changing a money field is refused: mistakes are
+      // fixed with a correction entry.
+      allow update: if idMatches(entryId)
+        && request.resource.data.groupId == resource.data.groupId
+        && request.resource.data.memberId == resource.data.memberId
+        && request.resource.data.type == resource.data.type
+        && request.resource.data.amountUgx == resource.data.amountUgx
+        && request.resource.data.get('correctsEntryId', null)
+             == resource.data.get('correctsEntryId', null)
+        && request.resource.data.get('loanId', null)
+             == resource.data.get('loanId', null);
+
+      allow delete: if false;
+    }
+  }
+}

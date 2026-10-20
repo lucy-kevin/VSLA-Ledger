@@ -5,6 +5,13 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+// Firebase is only needed for BACKEND=firebase, and its config file is
+// private (gitignored). Applying the plugin only when the file is there keeps
+// the build working for every contributor and for CI, who do not have it.
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+}
+
 android {
     namespace = "com.vsla.vsla_ledger"
     compileSdk = flutter.compileSdkVersion

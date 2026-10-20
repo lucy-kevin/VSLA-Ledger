@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -14,6 +16,21 @@ class TestApp {
   final AppDatabase db = newTestDatabase();
   final FakeLedgerRemote server = FakeLedgerRemote();
 
+  /// Stands in for the phone's network connection.
+  final _connection = StreamController<bool>();
+
+  /// Like switching airplane mode on: no network, so the server is
+  /// unreachable too.
+  void goOffline() {
+    server.offline = true;
+    _connection.add(false);
+  }
+
+  void goOnline() {
+    server.offline = false;
+    _connection.add(true);
+  }
+
   Future<void> start(WidgetTester tester) async {
     await tester.pumpWidget(
       ProviderScope(
@@ -21,6 +38,7 @@ class TestApp {
           appDatabaseProvider.overrideWithValue(db),
           deviceIdProvider.overrideWithValue('test-phone'),
           ledgerRemoteProvider.overrideWithValue(server),
+          onlineChangesProvider.overrideWith((ref) => _connection.stream),
         ],
         child: const VslaApp(),
       ),
@@ -44,5 +62,8 @@ class TestApp {
   Future<void> stop(WidgetTester tester) async {
     await tester.pumpWidget(const SizedBox());
     await tester.runAsync(db.close);
+    // Not awaited: close() waits for the app to hear "done", and the app is
+    // already gone, so it would wait forever.
+    unawaited(_connection.close());
   }
 }

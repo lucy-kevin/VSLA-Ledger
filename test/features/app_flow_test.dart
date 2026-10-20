@@ -61,42 +61,49 @@ void main() {
     await app.stop(tester);
   });
 
-  testWidgets('record savings: saved on phone, then synced', (tester) async {
+  testWidgets('online, a new record syncs on its own', (tester) async {
     await createGroupWithSarah(tester);
 
     await record(tester, 'Savings', '10000');
 
     expect(find.text('Savings  UGX 10,000'), findsOneWidget);
-    expect(find.textContaining('Saved on phone'), findsOneWidget);
-
-    // Back to the group screen to sync.
-    await tester.pageBack();
-    await app.settle(tester);
-    expect(find.text('3 records waiting to sync'), findsOneWidget);
-
-    await tapText(tester, 'Sync now');
-    await app.settle(tester);
-
-    expect(find.text('Everything is synced'), findsOneWidget);
-    expect(find.text('Everything is synced.'), findsOneWidget);
-    expect(app.server.entries.single.amountUgx, 10000);
-
-    await tapText(tester, 'Sarah');
     expect(find.textContaining('Synced'), findsOneWidget);
+    expect(app.server.entries.single.amountUgx, 10000);
+    await app.stop(tester);
+  });
+
+  testWidgets('airplane mode: saved on phone, synced when back online', (
+    tester,
+  ) async {
+    await createGroupWithSarah(tester);
+    app.goOffline();
+    await app.settle(tester);
+
+    await record(tester, 'Savings', '10000');
+
+    expect(find.textContaining('Saved on phone'), findsOneWidget);
+    expect(app.server.entries, isEmpty);
+
+    app.goOnline();
+    await app.settle(tester);
+
+    expect(find.textContaining('Synced'), findsOneWidget);
+    expect(app.server.entries.single.amountUgx, 10000);
     await app.stop(tester);
   });
 
   testWidgets('when the server is down, records stay safe on the phone', (
     tester,
   ) async {
-    await createGroupWithSarah(tester);
-    await record(tester, 'Savings', '5000');
-    await tester.pageBack();
+    await app.start(tester);
+    app.goOffline();
     await app.settle(tester);
-    app.server.offline = true;
+    await tapText(tester, 'Create a group');
+    await enter(tester, 'Group name', 'Tukolere Wamu');
+    await tapText(tester, 'Save');
+    expect(find.text('1 record waiting to sync'), findsOneWidget);
 
     await tapText(tester, 'Sync now');
-    await app.settle(tester);
 
     expect(
       find.text(
@@ -104,7 +111,24 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(find.text('3 records waiting to sync'), findsOneWidget);
+    expect(find.text('1 record waiting to sync'), findsOneWidget);
+    await app.stop(tester);
+  });
+
+  testWidgets('Sync now sends what is waiting', (tester) async {
+    await app.start(tester);
+    // The server is down, but the phone still thinks it is online.
+    app.server.offline = true;
+    await tapText(tester, 'Create a group');
+    await enter(tester, 'Group name', 'Tukolere Wamu');
+    await tapText(tester, 'Save');
+    expect(find.text('1 record waiting to sync'), findsOneWidget);
+
+    app.server.offline = false;
+    await tapText(tester, 'Sync now');
+
+    expect(find.text('Everything is synced.'), findsOneWidget);
+    expect(find.text('Everything is synced'), findsOneWidget);
     await app.stop(tester);
   });
 

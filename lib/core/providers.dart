@@ -1,3 +1,4 @@
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:vsla_ledger/core/database/app_database.dart';
@@ -8,8 +9,10 @@ import 'package:vsla_ledger/core/models/entry_line.dart';
 import 'package:vsla_ledger/core/models/group.dart';
 import 'package:vsla_ledger/core/models/ledger_entry.dart';
 import 'package:vsla_ledger/core/models/member.dart';
+import 'package:vsla_ledger/core/sync/connection.dart';
 import 'package:vsla_ledger/core/sync/ledger_remote.dart';
 import 'package:vsla_ledger/core/sync/sync_service.dart';
+import 'package:vsla_ledger/core/sync/sync_trigger.dart';
 
 part 'providers.g.dart';
 
@@ -47,6 +50,27 @@ SyncService syncService(Ref ref) => SyncService(
   db: ref.watch(appDatabaseProvider),
   remote: ref.watch(ledgerRemoteProvider),
 );
+
+/// The phone's online status now, then each change. Tests replace this.
+@Riverpod(keepAlive: true)
+Stream<bool> onlineChanges(Ref ref) => watchOnline(Connectivity());
+
+/// Syncs after writes and when the phone comes online. The app keeps this
+/// alive for as long as it runs (see VslaApp).
+@Riverpod(keepAlive: true)
+SyncTrigger syncTrigger(Ref ref) {
+  final trigger = SyncTrigger(
+    sync: ref.watch(syncServiceProvider),
+    outbox: ref.watch(appDatabaseProvider).outboxDao,
+  );
+  ref
+    ..listen(onlineChangesProvider, (previous, next) {
+      final online = next.valueOrNull;
+      if (online != null) trigger.onlineChanged(online: online);
+    }, fireImmediately: true)
+    ..onDispose(trigger.stop);
+  return trigger;
+}
 
 // --- Reading: live streams from the database --------------------------------
 // Screens only ever read through these. When the database changes, the

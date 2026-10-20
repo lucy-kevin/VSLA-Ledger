@@ -99,7 +99,10 @@ void main() {
     await joinWith(tester, 'TKW482');
 
     expect(
-      find.text('Joining needs the internet. Connect and try again.'),
+      find.text(
+        'Joining needs a connection to the server. '
+        'Connect and try again.',
+      ),
       findsOneWidget,
     );
     await app.stop(tester);

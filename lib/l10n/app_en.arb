@@ -20,12 +20,12 @@
 
   "joinGroupButton": "Join a group",
   "joinGroupTitle": "Join a group",
-  "joinGroupHelp": "Ask the treasurer who made the group for its join code. You need the internet to join.",
+  "joinGroupHelp": "Ask the treasurer who made the group for its join code. Joining needs a connection to the server.",
   "joinCodeLabel": "Join code",
   "joinButton": "Join",
   "joinCodeInvalid": "A join code has 6 letters and numbers.",
   "joinGroupNotFound": "No group has that code. Check it, or ask the treasurer to sync their phone first.",
-  "joinGroupNeedsConnection": "Joining needs the internet. Connect and try again.",
+  "joinGroupNeedsConnection": "Joining needs a connection to the server. Connect and try again.",
 
   "joinCode": "Join code: {code}",
   "@joinCode": {

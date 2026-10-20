@@ -17,19 +17,21 @@ Comment on an issue to say you're taking it, so two people don't do the same wor
 
 ## 2. Set up
 
-You need: Flutter (stable channel), Git, and an Android device or emulator.
-No laptop powerful enough? GitHub Codespaces works for editing, `flutter analyze` and tests.
+You need: Flutter 3.38.9 (stable channel, the version CI uses), Git, and an Android device
+or emulator. No laptop that can run Flutter? Translations and docs can be edited straight on
+GitHub in the browser.
 
 ```bash
-git clone https://github.com/<owner>/vsla_ledger.git
-cd vsla_ledger
+git clone https://github.com/lucy-kevin/VSLA-Ledger.git
+cd VSLA-Ledger
 flutter pub get
 dart run build_runner build --delete-conflicting-outputs
 flutter run --dart-define=BACKEND=fake
 ```
 
 The `fake` backend runs everything on your phone with no server and no internet. You only need
-PocketBase or Firebase if you're working on those adapters (see `server/pocketbase/README.md`).
+PocketBase or Firebase if you're working on those adapters (see `server/pocketbase/README.md`
+and `server/firebase/README.md`).
 
 ## 3. The rules that matter
 
@@ -61,6 +63,9 @@ flutter test
 All four must pass before you open a pull request. If you changed the database schema, add a
 migration **and** a migration test.
 
+Tests tagged `pocketbase` talk to a real PocketBase server and are skipped when none is running.
+To run them, start one (see `server/pocketbase/README.md`) and run `flutter test --tags pocketbase`.
+
 ### Commit messages
 
 We use [Conventional Commits](https://www.conventionalcommits.org/):
@@ -87,8 +92,8 @@ Once approved and CI is green, a maintainer merges it.
 
 ## 6. Recognition
 
-Every contributor is credited in the README via the all-contributors bot — code, docs,
-translation, design, testing and ideas all count.
+Every kind of help counts: code, docs, translation, design, testing and ideas. We say thank
+you in the pull request and in the release notes.
 
 ## 7. Behaviour
 

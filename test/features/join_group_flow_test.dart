@@ -78,7 +78,10 @@ void main() {
     await joinWith(tester, 'ZZZZZZ');
 
     expect(
-      find.text('No group has that code. Check it and try again.'),
+      find.text(
+        'No group has that code. Check it, '
+        'or ask the treasurer to sync their phone first.',
+      ),
       findsOneWidget,
     );
     await joinWith(tester, 'AB');

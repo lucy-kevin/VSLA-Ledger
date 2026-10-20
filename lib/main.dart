@@ -8,10 +8,18 @@ import 'package:vsla_ledger/core/providers.dart';
 import 'package:vsla_ledger/core/sync/connection.dart';
 import 'package:vsla_ledger/core/sync/ledger_remote.dart';
 import 'package:vsla_ledger/remote/fake_remote.dart';
+import 'package:vsla_ledger/remote/pocketbase_remote.dart';
 
 /// Which server to use: `flutter run --dart-define=BACKEND=fake`.
 /// `fake` needs no server and no internet, so it is the default.
 const backend = String.fromEnvironment('BACKEND', defaultValue: 'fake');
+
+/// Where the PocketBase server is. `10.0.2.2` is the Android emulator's name
+/// for the laptop it runs on; on a real phone use the laptop's IP address.
+const pocketBaseUrl = String.fromEnvironment(
+  'PB_URL',
+  defaultValue: 'http://10.0.2.2:8090',
+);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -35,9 +43,9 @@ Future<void> main() async {
 
 Future<LedgerRemote> remoteFor(String backend) async => switch (backend) {
   'fake' => await fakeThatFollowsTheConnection(Connectivity()),
+  'pocketbase' => PocketBaseRemote.connect(pocketBaseUrl),
   _ => throw UnsupportedError(
-    'Unknown BACKEND "$backend". Use: fake. '
-    'PocketBase and Firebase arrive in Week 2.',
+    'Unknown BACKEND "$backend". Use fake or pocketbase.',
   ),
 };
 

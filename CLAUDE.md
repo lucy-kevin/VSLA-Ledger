@@ -41,7 +41,7 @@ Three things the codebase must always demonstrate:
 | IDs | `uuid` (v4, generated on device) |
 | Backends | `pocketbase` (self-hosted), `cloud_firestore` (vendor comparison), `supabase_flutter` (later) |
 | Phone-to-phone | `nearby_connections` (behind its own `PeerSync` interface) |
-| Encryption | `sqlcipher_flutter_libs` + `flutter_secure_storage` |
+| Encryption | SQLCipher via `sqlite3` 3.x + `flutter_secure_storage`, **after the talk** (`sqlcipher_flutter_libs` is end-of-life) |
 | Lints | `very_good_analysis` |
 | Tests | `flutter_test`, `mocktail`, Drift in-memory database |
 
@@ -54,6 +54,9 @@ maintained), and record why in `context.md`. Prefer fewer dependencies.
 
 1. **The UI reads only from Drift**, via `watch()` streams exposed through Riverpod providers.
    No screen or widget ever calls a network API directly.
+   *One deliberate exception:* `lib/features/demo/`, built only with `--dart-define=DEMO=true`,
+   saves the "online-only" way on purpose, to show on stage why we don't (agreed 2026-10-20).
+   Nothing outside that folder may copy it.
 2. **Every user write goes to the entity table AND the `outbox` table in one Drift
    transaction.** Never write one without the other.
 3. **`ledger_entries` is append-only.** No `UPDATE` or `DELETE` on it, ever. Mistakes are
@@ -111,6 +114,7 @@ flutter analyze
 flutter test
 flutter run --dart-define=BACKEND=fake                       # no server needed
 flutter run --dart-define=BACKEND=pocketbase --dart-define=PB_URL=http://10.0.2.2:8090
+flutter run --dart-define=DEMO=true --dart-define=DEMO_DELAY_MS=3000  # talk demo: slow network
 flutter build apk --debug
 ```
 
@@ -161,7 +165,9 @@ laptop's LAN IP.
 
 - Records belong to real people's savings groups. Store only name and optional phone.
   No national ID numbers, no location.
-- Database encrypted with SQLCipher; key in `flutter_secure_storage` (Android Keystore).
+- Database to be encrypted with SQLCipher, key in `flutter_secure_storage` (Android Keystore).
+  **Not done yet:** planned for after the talk, so the demo build is not encrypted. Say so
+  when showing it, and never put real savings records in a demo build.
 - No secrets in source, `context.md` or plans. Config comes from `--dart-define` or local,
   gitignored files. Document how contributors create their own.
 - Exclude the database from Android auto-backup.

@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:drift_flutter/drift_flutter.dart';
+import 'package:sqlite3/common.dart';
 import 'package:vsla_ledger/core/database/daos/group_dao.dart';
 import 'package:vsla_ledger/core/database/daos/ledger_dao.dart';
 import 'package:vsla_ledger/core/database/daos/member_dao.dart';
@@ -24,7 +25,13 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
 
   /// The database file on the phone.
-  AppDatabase.onDevice() : super(driftDatabase(name: 'vsla_ledger'));
+  AppDatabase.onDevice()
+    : super(
+        driftDatabase(
+          name: 'vsla_ledger',
+          native: const DriftNativeOptions(setup: prepareSharedFile),
+        ),
+      );
 
   @override
   int get schemaVersion => 1;
@@ -50,4 +57,17 @@ class AppDatabase extends _$AppDatabase {
       ''');
     }
   }
+}
+
+/// Settings for the database file, which the open app and the background
+/// sync (a separate engine, with its own connection) may use at once.
+///
+/// - WAL mode: readers do not block the writer, so the screens keep working
+///   while a sync writes.
+/// - Busy timeout: if both write at the same moment, one waits up to five
+///   seconds for the other instead of failing straight away.
+void prepareSharedFile(CommonDatabase db) {
+  db
+    ..execute('PRAGMA journal_mode = WAL;')
+    ..execute('PRAGMA busy_timeout = 5000;');
 }

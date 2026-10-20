@@ -57,6 +57,12 @@ class MemberScreen extends ConsumerWidget {
                   icon: const Icon(Icons.call_received),
                   label: Text(l10n.recordRepaymentButton),
                 ),
+                if (ref.watch(showDemoScreensProvider))
+                  OutlinedButton.icon(
+                    onPressed: () => context.push('$here/compare'),
+                    icon: const Icon(Icons.timer),
+                    label: Text(l10n.compareButton),
+                  ),
               ],
             ),
           ),

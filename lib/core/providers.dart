@@ -33,6 +33,11 @@ String deviceId(Ref ref) => throw UnimplementedError('Overridden in main.dart');
 LedgerRemote ledgerRemote(Ref ref) =>
     throw UnimplementedError('Overridden in main.dart');
 
+/// Talk demo only: show the Compare screen (lib/features/demo/). main.dart
+/// sets it from `--dart-define=DEMO=true`; tests switch it on directly.
+@Riverpod(keepAlive: true)
+bool showDemoScreens(Ref ref) => false;
+
 // --- Writing -----------------------------------------------------------------
 
 @Riverpod(keepAlive: true)

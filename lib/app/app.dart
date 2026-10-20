@@ -14,7 +14,9 @@ class VslaApp extends ConsumerStatefulWidget {
 
 class _VslaAppState extends ConsumerState<VslaApp> {
   // Made once per app, so tests that start a fresh app get a fresh router.
-  final GoRouter _router = createRouter();
+  late final GoRouter _router = createRouter(
+    withDemoScreens: ref.read(showDemoScreensProvider),
+  );
 
   @override
   void dispose() {

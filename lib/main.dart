@@ -23,6 +23,7 @@ Future<void> main() async {
         deviceIdProvider.overrideWithValue(deviceId),
         // This one line is the whole "swap the backend" story.
         ledgerRemoteProvider.overrideWithValue(remote),
+        showDemoScreensProvider.overrideWithValue(demoMode),
       ],
       child: const VslaApp(),
     ),

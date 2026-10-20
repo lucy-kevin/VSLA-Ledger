@@ -1,5 +1,7 @@
 import 'package:go_router/go_router.dart';
+import 'package:vsla_ledger/app/backend.dart';
 import 'package:vsla_ledger/core/models/entry_type.dart';
+import 'package:vsla_ledger/features/demo/compare_screen.dart';
 import 'package:vsla_ledger/features/groups/create_group_screen.dart';
 import 'package:vsla_ledger/features/groups/group_screen.dart';
 import 'package:vsla_ledger/features/groups/groups_screen.dart';
@@ -17,7 +19,8 @@ import 'package:vsla_ledger/features/members/member_screen.dart';
 ///   /groups/:groupId/members/new             add a member
 ///   /groups/:groupId/members/:memberId       one member's balance and history
 ///   .../members/:memberId/contribute|lend|repay   record an entry
-GoRouter createRouter() => GoRouter(
+///   .../members/:memberId/compare            talk demo only (DEMO=true)
+GoRouter createRouter({required bool withDemoScreens}) => GoRouter(
   routes: [
     GoRoute(
       path: '/',
@@ -61,6 +64,15 @@ GoRouter createRouter() => GoRouter(
                       groupId: state.pathParameters['groupId']!,
                       memberId: state.pathParameters['memberId']!,
                       type: type,
+                    ),
+                  ),
+                if (withDemoScreens)
+                  GoRoute(
+                    path: 'compare',
+                    builder: (context, state) => CompareScreen(
+                      groupId: state.pathParameters['groupId']!,
+                      memberId: state.pathParameters['memberId']!,
+                      slowNetworkDelay: demoDelay,
                     ),
                   ),
               ],

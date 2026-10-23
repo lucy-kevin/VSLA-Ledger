@@ -75,6 +75,14 @@ class _GroupBody extends ConsumerWidget {
             balance: balance,
           ),
         ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: FilledButton.icon(
+            onPressed: () => context.push('/groups/${group.id}/meeting'),
+            icon: const Icon(Icons.event_available),
+            label: Text(l10n.startMeetingButton),
+          ),
+        ),
         const SyncPanel(),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),

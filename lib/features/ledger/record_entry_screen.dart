@@ -4,11 +4,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:vsla_ledger/app/async_value_view.dart';
 import 'package:vsla_ledger/app/save_guard.dart';
-import 'package:vsla_ledger/core/ledger/ledger_rule_broken.dart';
 import 'package:vsla_ledger/core/ledger/loan_status.dart';
 import 'package:vsla_ledger/core/models/entry_type.dart';
 import 'package:vsla_ledger/core/models/group.dart';
 import 'package:vsla_ledger/core/providers.dart';
+import 'package:vsla_ledger/features/ledger/share_chooser.dart';
 import 'package:vsla_ledger/l10n/app_localizations.dart';
 
 /// Records savings, social fund, a fine, a loan or a repayment for one
@@ -248,7 +248,11 @@ class _EntryFormState extends ConsumerState<_EntryForm> {
           ),
           const SizedBox(height: 8),
           if (_buysShares)
-            ..._shareChooser(l10n, group!.sharePriceUgx!)
+            ShareChooser(
+              selected: _shares,
+              sharePriceUgx: group!.sharePriceUgx!,
+              onSelected: (count) => setState(() => _shares = count),
+            )
           else
             TextFormField(
               controller: _amount,
@@ -282,28 +286,4 @@ class _EntryFormState extends ConsumerState<_EntryForm> {
       ),
     );
   }
-
-  /// "How many shares?" as buttons 1 to 5, and what they come to.
-  List<Widget> _shareChooser(AppLocalizations l10n, int sharePriceUgx) => [
-    Text(l10n.sharesChooseLabel, style: Theme.of(context).textTheme.titleSmall),
-    const SizedBox(height: 8),
-    Wrap(
-      spacing: 8,
-      children: [
-        for (var count = 1; count <= maxSharesPerMeeting; count++)
-          ChoiceChip(
-            label: Text('$count'),
-            selected: _shares == count,
-            onSelected: (_) => setState(() => _shares = count),
-          ),
-      ],
-    ),
-    if (_shares != null) ...[
-      const SizedBox(height: 8),
-      Text(
-        l10n.amountUgx(_shares! * sharePriceUgx),
-        style: Theme.of(context).textTheme.titleMedium,
-      ),
-    ],
-  ];
 }

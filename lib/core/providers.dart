@@ -111,6 +111,11 @@ Stream<List<Member>> members(Ref ref, String groupId) =>
 Stream<Member?> member(Ref ref, String memberId) =>
     ref.watch(appDatabaseProvider).memberDao.watchMember(memberId);
 
+/// Every entry of a group, including corrections (for the meeting screen).
+@riverpod
+Stream<List<LedgerEntry>> groupEntries(Ref ref, String groupId) =>
+    ref.watch(appDatabaseProvider).ledgerDao.watchEntriesForGroup(groupId);
+
 @riverpod
 Stream<List<EntryLine>> memberHistory(Ref ref, String memberId) =>
     ref.watch(appDatabaseProvider).ledgerDao.watchHistoryForMember(memberId);

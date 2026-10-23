@@ -7,6 +7,7 @@ import 'package:vsla_ledger/features/groups/group_screen.dart';
 import 'package:vsla_ledger/features/groups/groups_screen.dart';
 import 'package:vsla_ledger/features/groups/join_group_screen.dart';
 import 'package:vsla_ledger/features/ledger/record_entry_screen.dart';
+import 'package:vsla_ledger/features/meeting/meeting_screen.dart';
 import 'package:vsla_ledger/features/members/add_member_screen.dart';
 import 'package:vsla_ledger/features/members/member_screen.dart';
 
@@ -16,6 +17,7 @@ import 'package:vsla_ledger/features/members/member_screen.dart';
 ///   /groups/new                              create a group
 ///   /groups/join                             join a group by its code
 ///   /groups/:groupId                         one group and its members
+///   /groups/:groupId/meeting                 run a meeting
 ///   /groups/:groupId/members/new             add a member
 ///   /groups/:groupId/members/:memberId       one member's balance and history
 ///   .../members/:memberId/contribute|lend|repay|social-fund|fine  record
@@ -41,6 +43,11 @@ GoRouter createRouter({required bool withDemoScreens}) => GoRouter(
           builder: (context, state) =>
               GroupScreen(groupId: state.pathParameters['groupId']!),
           routes: [
+            GoRoute(
+              path: 'meeting',
+              builder: (context, state) =>
+                  MeetingScreen(groupId: state.pathParameters['groupId']!),
+            ),
             GoRoute(
               path: 'members/new',
               builder: (context, state) =>

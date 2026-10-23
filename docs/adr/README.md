@@ -9,6 +9,7 @@ that supersedes it and link back.
 | [0001](0001-append-only-ledger.md) | Ledger entries are append-only | Accepted |
 | [0002](0002-vendors-behind-ledgerremote.md) | All backends behind `LedgerRemote` | Accepted |
 | [0003](0003-flutter-drift-riverpod.md) | Flutter + Drift + Riverpod as the local-first core | Accepted |
+| [0004](0004-loan-charge-computed-not-stored.md) | The loan service charge is worked out when shown, never stored | Accepted |
 
 ## Template
 

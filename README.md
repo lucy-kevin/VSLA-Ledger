@@ -54,6 +54,26 @@ flutter run --dart-define=BACKEND=firebase
 phone first, or waiting for the server) and times both. `--dart-define=DEMO_DELAY_MS=3000`
 makes every server request wait 3 seconds, to show a slow network.
 
+## What it does
+
+- Groups, members, and a **meeting screen** to record a whole meeting quickly.
+- Savings (any amount, or in **shares** if the group sets a share price), **social fund** and
+  **fines**, each for the day of the meeting, which can be an earlier day.
+- Loans with a **monthly service charge** and repayments (charges are paid first).
+- Mistakes are cancelled, never edited. Everything works with no signal and syncs later.
+
+## What it does not do yet
+
+- No login: anyone who can reach the server and has a group's join code can read and write
+  that group. **Demo servers only. Use made-up data.**
+- The phone's database is not encrypted yet.
+- Group settings (charge, share price) cannot be changed after the group is made.
+- No share-out at the end of a cycle, no reports, no member editing, only English.
+- The loan charge rules are a first version and have not been checked by a real treasurer.
+- Android only. Phone-to-phone sharing is not built.
+
+Each of these is a good project: see [docs/roadmap.md](docs/roadmap.md).
+
 ## How it works
 
 - The phone's SQLite database (via [Drift](https://drift.simonbinder.eu/)) is the source of truth.

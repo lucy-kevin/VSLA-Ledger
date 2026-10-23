@@ -54,6 +54,22 @@ phone comes back online, and when the app comes back to the screen. A `workmanag
 it about every 15 minutes in the background on Android, and the user can tap **Sync now**.
 Entries leave the outbox → the badge changes to **Synced**.
 
+## What a savings group does in the app
+
+- **Meetings.** Every record has a *meeting date*: the day of the meeting it belongs to, not the
+  time it was typed. A treasurer can record Monday's meeting on Tuesday. The date cannot be after
+  today or before the group was made. The **meeting screen** lists every member so a whole
+  meeting is a few taps per person.
+- **Savings and shares.** A group can set a share price. Then members buy 1 to 5 shares per
+  meeting and the amount is shares times price. Without a price, savings are any amount.
+- **Social fund and fines.** Two more entry types with their own totals. They are not savings.
+- **Loans.** A loan carries the group's monthly charge (percent of what is still unpaid, added
+  after each full month). It is worked out when shown, never stored. See
+  [ADR 0004](adr/0004-loan-charge-computed-not-stored.md).
+- **Group rules** (the monthly charge and the share price) are set when the group is made and
+  cannot be changed later, because groups sync as insert-or-ignore.
+- **Not yet checked by a real treasurer.** Treat the charge rules as a first version.
+
 ## Why conflicts are rare
 
 Money entries are **append-only**: nobody edits or deletes them. Two phones adding entries

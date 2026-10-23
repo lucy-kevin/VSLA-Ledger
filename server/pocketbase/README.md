@@ -41,6 +41,14 @@ Local data lives in `pb_data/` (gitignored). Delete it to start fresh.
 - Amounts are whole shillings, at least 1.
 - Ledger entries are append-only: sending the same entry again is fine (that's a retry);
   changing or deleting one is refused.
+- Entry types are `contribution`, `loan`, `repayment`, `correction`, `socialFund` and `fine`.
+  Shares and a loan's monthly charge are whole numbers and cannot change after an entry is saved.
+
+The second migration (`1792800000_add_meetings_charges_shares.js`) adds meeting dates, shares,
+the monthly loan charge, the share price, and the two new entry types. PocketBase applies it by
+itself when it starts. **An app from before this change cannot sync to a server that has not
+run it, and the other way round.** If the app says records were refused, check the server has
+started since you updated the repository.
 
 ## Demo only
 

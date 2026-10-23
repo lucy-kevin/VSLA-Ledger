@@ -121,6 +121,11 @@ Stream<Balance> memberBalance(Ref ref, String memberId) =>
 Stream<Balance> groupBalance(Ref ref, String groupId) =>
     ref.watch(appDatabaseProvider).ledgerDao.watchGroupBalance(groupId);
 
+/// Records the server keeps refusing. They stay on the phone.
+@riverpod
+Stream<int> stuckRecords(Ref ref) =>
+    ref.watch(appDatabaseProvider).outboxDao.watchStuckCount();
+
 @riverpod
 Stream<int> recordsWaitingToSync(Ref ref) =>
     ref.watch(appDatabaseProvider).outboxDao.watchPendingCount();

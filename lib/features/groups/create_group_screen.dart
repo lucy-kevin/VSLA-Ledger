@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:vsla_ledger/app/save_guard.dart';
 import 'package:vsla_ledger/core/providers.dart';
 import 'package:vsla_ledger/l10n/app_localizations.dart';
 
@@ -26,12 +27,19 @@ class _CreateGroupScreenState extends ConsumerState<CreateGroupScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _saving = true);
 
-    final group = await ref
-        .read(groupRepositoryProvider)
-        .createGroup(_name.text);
+    final repository = ref.read(groupRepositoryProvider);
+    late final String groupId;
+    final saved = await saveOrExplain(context, () async {
+      groupId = (await repository.createGroup(_name.text)).id;
+    });
 
-    // Replace this form with the new group, so "back" goes to the group list.
-    if (mounted) context.pushReplacement('/groups/${group.id}');
+    if (!mounted) return;
+    if (saved) {
+      // Replace this form with the new group, so "back" goes to the group list.
+      context.pushReplacement('/groups/$groupId');
+    } else {
+      setState(() => _saving = false);
+    }
   }
 
   @override

@@ -3,11 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:vsla_ledger/app/async_value_view.dart';
-import 'package:vsla_ledger/core/ledger/ledger_rule_broken.dart';
+import 'package:vsla_ledger/app/save_guard.dart';
 import 'package:vsla_ledger/core/ledger/loan_status.dart';
 import 'package:vsla_ledger/core/models/entry_type.dart';
 import 'package:vsla_ledger/core/providers.dart';
-import 'package:vsla_ledger/features/ledger/ledger_labels.dart';
 import 'package:vsla_ledger/l10n/app_localizations.dart';
 
 /// Records savings, a loan or a repayment for one member.
@@ -90,18 +89,18 @@ class _AmountFormState extends ConsumerState<_AmountForm> {
 
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
-    final l10n = AppLocalizations.of(context);
-    final messenger = ScaffoldMessenger.of(context);
     setState(() => _saving = true);
 
-    try {
-      await _record(int.parse(_amount.text));
-      if (mounted) context.pop();
-    } on LedgerRuleBroken catch (refusal) {
-      messenger.showSnackBar(
-        SnackBar(content: Text(ledgerRuleMessage(l10n, refusal.rule))),
-      );
-      if (mounted) setState(() => _saving = false);
+    final saved = await saveOrExplain(
+      context,
+      () => _record(int.parse(_amount.text)),
+    );
+
+    if (!mounted) return;
+    if (saved) {
+      context.pop();
+    } else {
+      setState(() => _saving = false);
     }
   }
 

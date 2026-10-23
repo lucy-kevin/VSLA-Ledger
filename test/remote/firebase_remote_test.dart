@@ -52,7 +52,7 @@ void main() {
       amountUgx: 10000,
     );
 
-    expect(await phoneA.sync.run(), isTrue);
+    expect(await phoneA.sync.run(), SyncResult.ok);
 
     final stored = await firestore
         .collection('ledger_entries')
@@ -83,7 +83,7 @@ void main() {
     await phoneA.sync.run();
 
     await phoneB.db.groupDao.insertGroup(group);
-    expect(await phoneB.sync.run(), isTrue);
+    expect(await phoneB.sync.run(), SyncResult.ok);
 
     final onB = await phoneB.db.ledgerDao.watchEntriesForMember(sarah.id).first;
     expect(onB.single.id, saved.id);

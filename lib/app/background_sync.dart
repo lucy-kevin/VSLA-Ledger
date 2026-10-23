@@ -44,7 +44,10 @@ Future<bool> runBackgroundSync({
   final db = openDatabase();
   try {
     final remote = await connect();
-    return await SyncService(db: db, remote: remote).run();
+    final result = await SyncService(db: db, remote: remote).run();
+    // A refusal will not go away by waiting, so only an unreachable server
+    // asks Android to try again.
+    return result != SyncResult.unreachable;
   } on Exception {
     return false;
   } finally {

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:vsla_ledger/core/ledger/ledger_rule_broken.dart';
+import 'package:vsla_ledger/app/save_guard.dart';
 import 'package:vsla_ledger/core/models/entry_line.dart';
 import 'package:vsla_ledger/core/models/entry_type.dart';
 import 'package:vsla_ledger/core/providers.dart';
@@ -60,7 +60,6 @@ class EntryTile extends ConsumerWidget {
 
   Future<void> _confirmCancel(BuildContext context, WidgetRef ref) async {
     final l10n = AppLocalizations.of(context);
-    final messenger = ScaffoldMessenger.of(context);
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -80,12 +79,10 @@ class EntryTile extends ConsumerWidget {
     );
     if (confirmed != true) return;
 
-    try {
-      await ref.read(ledgerRepositoryProvider).cancelEntry(line.entry.id);
-    } on LedgerRuleBroken catch (refusal) {
-      messenger.showSnackBar(
-        SnackBar(content: Text(ledgerRuleMessage(l10n, refusal.rule))),
-      );
-    }
+    if (!context.mounted) return;
+    await saveOrExplain(
+      context,
+      () => ref.read(ledgerRepositoryProvider).cancelEntry(line.entry.id),
+    );
   }
 }

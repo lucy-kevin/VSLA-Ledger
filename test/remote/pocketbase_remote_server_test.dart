@@ -79,12 +79,12 @@ Future<void> main() async {
         amountUgx: 10000,
       );
 
-      expect(await phoneA.sync.run(), isTrue);
+      expect(await phoneA.sync.run(), SyncResult.ok);
       expect(await phoneA.db.outboxDao.watchPendingCount().first, 0);
 
       // Phone B already knows the group (joining by code comes later).
       await phoneB.db.groupDao.insertGroup(group);
-      expect(await phoneB.sync.run(), isTrue);
+      expect(await phoneB.sync.run(), SyncResult.ok);
 
       final onB = await phoneB.db.ledgerDao
           .watchEntriesForMember(sarah.id)

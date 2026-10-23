@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:vsla_ledger/app/async_value_view.dart';
 import 'package:vsla_ledger/app/save_guard.dart';
+import 'package:vsla_ledger/app/widgets.dart';
 import 'package:vsla_ledger/core/ledger/loan_status.dart';
 import 'package:vsla_ledger/core/models/entry_type.dart';
 import 'package:vsla_ledger/core/models/group.dart';
@@ -206,11 +207,32 @@ class _EntryFormState extends ConsumerState<_EntryForm> {
     final l10n = AppLocalizations.of(context);
     final group = widget.group;
 
+    final member = ref.watch(memberProvider(widget.memberId)).valueOrNull;
+
     return Form(
       key: _formKey,
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          // Who this is for, so a record is never typed into the wrong
+          // person's page.
+          if (member != null) ...[
+            Row(
+              children: [
+                InitialsAvatar(member.name),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    member.name,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+          ],
           if (widget.type == EntryType.repayment) ...[
             DropdownButtonFormField<String>(
               initialValue: _loanId,

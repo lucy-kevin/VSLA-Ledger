@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:vsla_ledger/app/async_value_view.dart';
+import 'package:vsla_ledger/app/widgets.dart';
 import 'package:vsla_ledger/core/providers.dart';
 import 'package:vsla_ledger/l10n/app_localizations.dart';
 
@@ -36,24 +37,30 @@ class GroupsScreen extends ConsumerWidget {
               value: ref.watch(groupsProvider),
               builder: (groups) {
                 if (groups.isEmpty) {
-                  return Center(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Text(
-                        l10n.noGroupsYet,
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
+                  return EmptyState(
+                    icon: Icons.groups_2_outlined,
+                    message: l10n.noGroupsYet,
                   );
                 }
                 return ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                   children: [
                     for (final group in groups)
-                      ListTile(
-                        leading: const Icon(Icons.groups),
-                        title: Text(group.name),
-                        trailing: const Icon(Icons.chevron_right),
-                        onTap: () => context.push('/groups/${group.id}'),
+                      Card(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        clipBehavior: Clip.antiAlias,
+                        child: ListTile(
+                          minVerticalPadding: 16,
+                          leading: InitialsAvatar(group.name, radius: 26),
+                          title: Text(
+                            group.name,
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(fontWeight: FontWeight.w600),
+                          ),
+                          subtitle: Text(l10n.joinCode(group.joinCode)),
+                          trailing: const Icon(Icons.chevron_right),
+                          onTap: () => context.push('/groups/${group.id}'),
+                        ),
                       ),
                   ],
                 );

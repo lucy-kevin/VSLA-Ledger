@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:vsla_ledger/app/router.dart';
+import 'package:vsla_ledger/app/theme.dart';
 import 'package:vsla_ledger/core/providers.dart';
 import 'package:vsla_ledger/l10n/app_localizations.dart';
 
@@ -50,15 +51,8 @@ class _VslaAppState extends ConsumerState<VslaApp> {
 
     return MaterialApp.router(
       onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF2E7D32)),
-      ),
-      darkTheme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF2E7D32),
-          brightness: Brightness.dark,
-        ),
-      ),
+      theme: buildTheme(Brightness.light),
+      darkTheme: buildTheme(Brightness.dark),
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       routerConfig: _router,

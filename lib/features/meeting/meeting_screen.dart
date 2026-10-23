@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:vsla_ledger/app/async_value_view.dart';
 import 'package:vsla_ledger/app/save_guard.dart';
+import 'package:vsla_ledger/app/widgets.dart';
 import 'package:vsla_ledger/core/ledger/balance_calculator.dart';
 import 'package:vsla_ledger/core/ledger/loan_status.dart';
 import 'package:vsla_ledger/core/models/balance.dart';
@@ -105,9 +106,21 @@ class _MeetingScreenState extends ConsumerState<MeetingScreen> {
               children: [
                 Text(
                   l10n.meetingSavedCount(savedMembers.length, members.length),
-                  style: Theme.of(context).textTheme.titleMedium,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 10),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: LinearProgressIndicator(
+                    minHeight: 8,
+                    value: members.isEmpty
+                        ? 0
+                        : savedMembers.length / members.length,
+                  ),
+                ),
+                const SizedBox(height: 10),
                 Text(_summary(totals) ?? l10n.meetingNothingYet),
               ],
             ),
@@ -121,17 +134,17 @@ class _MeetingScreenState extends ConsumerState<MeetingScreen> {
           ),
         for (final member in members)
           ListTile(
-            leading: const Icon(Icons.person),
-            title: Text(member.name),
-            subtitle: Text(
-              _summary(
-                    computeBalance([
-                      for (final e in thisMeeting)
-                        if (e.memberId == member.id) e,
-                    ]),
-                  ) ??
-                  l10n.meetingNothingYet,
+            minVerticalPadding: 10,
+            leading: InitialsAvatar(member.name),
+            title: Text(
+              member.name,
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
+            // Nothing under the name until something is recorded, so a long
+            // list of members stays quiet.
+            subtitle: _memberSummary(thisMeeting, member),
             trailing: FilledButton.tonalIcon(
               icon: const Icon(Icons.add),
               label: Text(l10n.meetingRecordButton),
@@ -140,6 +153,16 @@ class _MeetingScreenState extends ConsumerState<MeetingScreen> {
           ),
       ],
     );
+  }
+
+  Widget? _memberSummary(List<LedgerEntry> thisMeeting, Member member) {
+    final summary = _summary(
+      computeBalance([
+        for (final e in thisMeeting)
+          if (e.memberId == member.id) e,
+      ]),
+    );
+    return summary == null ? null : Text(summary);
   }
 
   /// "Savings UGX 6,000 · Fines UGX 500", or null if nothing was recorded.

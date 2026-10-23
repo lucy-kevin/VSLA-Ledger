@@ -30,7 +30,8 @@ class EntryTile extends ConsumerWidget {
         ? l10n.statusSyncedTest
         : l10n.statusSynced;
     final details = [
-      l10n.entryDate(entry.createdAt.toLocal()),
+      l10n.entryDate(entry.meetingDay),
+      if (entry.shares != null) l10n.sharesBought(entry.shares!),
       if (line.isWaitingToSync) l10n.statusSavedOnPhone else synced,
       if (line.isCancelled) l10n.entryCancelled,
     ];

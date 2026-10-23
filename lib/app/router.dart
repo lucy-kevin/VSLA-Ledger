@@ -18,7 +18,7 @@ import 'package:vsla_ledger/features/members/member_screen.dart';
 ///   /groups/:groupId                         one group and its members
 ///   /groups/:groupId/members/new             add a member
 ///   /groups/:groupId/members/:memberId       one member's balance and history
-///   .../members/:memberId/contribute|lend|repay   record an entry
+///   .../members/:memberId/contribute|lend|repay|social-fund|fine  record
 ///   .../members/:memberId/compare            talk demo only (DEMO=true)
 GoRouter createRouter({required bool withDemoScreens}) => GoRouter(
   routes: [
@@ -57,6 +57,8 @@ GoRouter createRouter({required bool withDemoScreens}) => GoRouter(
                   ('contribute', EntryType.contribution),
                   ('lend', EntryType.loan),
                   ('repay', EntryType.repayment),
+                  ('social-fund', EntryType.socialFund),
+                  ('fine', EntryType.fine),
                 ])
                   GoRoute(
                     path: path,

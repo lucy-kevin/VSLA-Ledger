@@ -4,12 +4,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:vsla_ledger/app/async_value_view.dart';
 import 'package:vsla_ledger/app/save_guard.dart';
+import 'package:vsla_ledger/core/ledger/ledger_rule_broken.dart';
 import 'package:vsla_ledger/core/ledger/loan_status.dart';
 import 'package:vsla_ledger/core/models/entry_type.dart';
+import 'package:vsla_ledger/core/models/group.dart';
 import 'package:vsla_ledger/core/providers.dart';
 import 'package:vsla_ledger/l10n/app_localizations.dart';
 
-/// Records savings, a loan or a repayment for one member.
+/// Records savings, social fund, a fine, a loan or a repayment for one
+/// member, for a chosen meeting day (today unless changed).
 class RecordEntryScreen extends ConsumerWidget {
   const RecordEntryScreen({
     required this.groupId,
@@ -27,40 +30,55 @@ class RecordEntryScreen extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final title = switch (type) {
       EntryType.contribution => l10n.recordContributionTitle,
+      EntryType.socialFund => l10n.recordSocialFundTitle,
+      EntryType.fine => l10n.recordFineTitle,
       EntryType.loan => l10n.issueLoanTitle,
       _ => l10n.recordRepaymentTitle,
     };
 
     return Scaffold(
       appBar: AppBar(title: Text(title)),
-      body: type != EntryType.repayment
-          ? _AmountForm(groupId: groupId, memberId: memberId, type: type)
-          : AsyncValueView(
-              value: ref.watch(memberEntriesProvider(memberId)),
-              builder: (entries) {
-                final openLoans = loanStatuses(
-                  entries,
-                ).where((status) => !status.isRepaid).toList();
-                if (openLoans.isEmpty) {
-                  return Center(child: Text(l10n.noOpenLoans));
-                }
-                return _AmountForm(
-                  groupId: groupId,
-                  memberId: memberId,
-                  type: type,
-                  openLoans: openLoans,
-                );
-              },
-            ),
+      body: AsyncValueView(
+        value: ref.watch(groupProvider(groupId)),
+        builder: (group) {
+          if (type != EntryType.repayment) {
+            return _EntryForm(
+              groupId: groupId,
+              memberId: memberId,
+              type: type,
+              group: group,
+            );
+          }
+          return AsyncValueView(
+            value: ref.watch(memberEntriesProvider(memberId)),
+            builder: (entries) {
+              final openLoans = loanStatuses(
+                entries,
+              ).where((status) => !status.isRepaid).toList();
+              if (openLoans.isEmpty) {
+                return Center(child: Text(l10n.noOpenLoans));
+              }
+              return _EntryForm(
+                groupId: groupId,
+                memberId: memberId,
+                type: type,
+                group: group,
+                openLoans: openLoans,
+              );
+            },
+          );
+        },
+      ),
     );
   }
 }
 
-class _AmountForm extends ConsumerStatefulWidget {
-  const _AmountForm({
+class _EntryForm extends ConsumerStatefulWidget {
+  const _EntryForm({
     required this.groupId,
     required this.memberId,
     required this.type,
+    required this.group,
     this.openLoans = const [],
   });
 
@@ -68,18 +86,33 @@ class _AmountForm extends ConsumerStatefulWidget {
   final String memberId;
   final EntryType type;
 
+  /// Null only if the group is not on this phone (should not happen).
+  final Group? group;
+
   /// Only used for repayments.
   final List<LoanStatus> openLoans;
 
   @override
-  ConsumerState<_AmountForm> createState() => _AmountFormState();
+  ConsumerState<_EntryForm> createState() => _EntryFormState();
 }
 
-class _AmountFormState extends ConsumerState<_AmountForm> {
+class _EntryFormState extends ConsumerState<_EntryForm> {
   final _formKey = GlobalKey<FormState>();
   final _amount = TextEditingController();
   late String? _loanId = widget.openLoans.firstOrNull?.loan.id;
+  late DateTime _meetingDate = _today;
+  int? _shares;
   bool _saving = false;
+
+  /// A group with a share price saves in shares, not in free amounts.
+  bool get _buysShares =>
+      widget.type == EntryType.contribution &&
+      (widget.group?.sharePriceUgx ?? 0) > 0;
+
+  static DateTime get _today {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day);
+  }
 
   @override
   void dispose() {
@@ -90,13 +123,10 @@ class _AmountFormState extends ConsumerState<_AmountForm> {
   int? get _typedAmount => int.tryParse(_amount.text);
 
   Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_buysShares && !_formKey.currentState!.validate()) return;
     setState(() => _saving = true);
 
-    final saved = await saveOrExplain(
-      context,
-      () => _record(int.parse(_amount.text)),
-    );
+    final saved = await saveOrExplain(context, _record);
 
     if (!mounted) return;
     if (saved) {
@@ -106,27 +136,59 @@ class _AmountFormState extends ConsumerState<_AmountForm> {
     }
   }
 
-  Future<void> _record(int amountUgx) {
+  Future<void> _record() {
     final ledger = ref.read(ledgerRepositoryProvider);
     final (groupId, memberId) = (widget.groupId, widget.memberId);
+    final day = _meetingDate;
     return switch (widget.type) {
       EntryType.contribution => ledger.recordContribution(
         groupId: groupId,
         memberId: memberId,
-        amountUgx: amountUgx,
+        amountUgx: _buysShares ? null : _typedAmount,
+        shares: _buysShares ? _shares : null,
+        meetingDate: day,
+      ),
+      EntryType.socialFund => ledger.recordSocialFund(
+        groupId: groupId,
+        memberId: memberId,
+        amountUgx: _typedAmount ?? 0,
+        meetingDate: day,
+      ),
+      EntryType.fine => ledger.recordFine(
+        groupId: groupId,
+        memberId: memberId,
+        amountUgx: _typedAmount ?? 0,
+        meetingDate: day,
       ),
       EntryType.loan => ledger.issueLoan(
         groupId: groupId,
         memberId: memberId,
-        amountUgx: amountUgx,
+        amountUgx: _typedAmount ?? 0,
+        meetingDate: day,
       ),
       _ => ledger.recordRepayment(
         groupId: groupId,
         memberId: memberId,
         loanId: _loanId!,
-        amountUgx: amountUgx,
+        amountUgx: _typedAmount ?? 0,
+        meetingDate: day,
       ),
     };
+  }
+
+  Future<void> _pickDate() async {
+    final created = widget.group?.createdAt.toLocal();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _meetingDate,
+      // Not before the group was made, and not in the future: the same
+      // rules the ledger enforces.
+      firstDate: created == null
+          ? DateTime(2020)
+          : DateTime(created.year, created.month, created.day),
+      lastDate: _today,
+    );
+    if (picked != null) setState(() => _meetingDate = picked);
   }
 
   // Only checks that a whole number was typed. Every money rule (above
@@ -142,6 +204,7 @@ class _AmountFormState extends ConsumerState<_AmountForm> {
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final group = widget.group;
 
     return Form(
       key: _formKey,
@@ -165,23 +228,51 @@ class _AmountFormState extends ConsumerState<_AmountForm> {
             ),
             const SizedBox(height: 16),
           ],
-          TextFormField(
-            controller: _amount,
-            autofocus: true,
-            keyboardType: TextInputType.number,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration: InputDecoration(
-              labelText: l10n.amountLabel,
-              // The amount in full, with separators, so an extra zero shows.
-              helperText: _typedAmount == null
-                  ? null
-                  : l10n.amountUgx(_typedAmount!),
-              helperStyle: Theme.of(context).textTheme.titleMedium,
+          ListTile(
+            contentPadding: EdgeInsets.zero,
+            leading: const Icon(Icons.event),
+            title: Text(l10n.meetingDateLabel),
+            subtitle: Text(
+              l10n.entryDate(
+                DateTime.utc(
+                  _meetingDate.year,
+                  _meetingDate.month,
+                  _meetingDate.day,
+                ),
+              ),
             ),
-            onChanged: (_) => setState(() {}),
-            validator: _validateAmount,
-            onFieldSubmitted: (_) => _save(),
+            trailing: TextButton(
+              onPressed: _pickDate,
+              child: Text(l10n.changeDateButton),
+            ),
           ),
+          const SizedBox(height: 8),
+          if (_buysShares)
+            ..._shareChooser(l10n, group!.sharePriceUgx!)
+          else
+            TextFormField(
+              controller: _amount,
+              autofocus: true,
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              decoration: InputDecoration(
+                labelText: l10n.amountLabel,
+                // The amount in full, with separators, so an extra zero
+                // shows.
+                helperText: _typedAmount == null
+                    ? null
+                    : l10n.amountUgx(_typedAmount!),
+                helperStyle: Theme.of(context).textTheme.titleMedium,
+              ),
+              onChanged: (_) => setState(() {}),
+              validator: _validateAmount,
+              onFieldSubmitted: (_) => _save(),
+            ),
+          if (widget.type == EntryType.loan &&
+              (group?.monthlyChargePercent ?? 0) > 0) ...[
+            const SizedBox(height: 16),
+            Text(l10n.chargeInfo(group!.monthlyChargePercent)),
+          ],
           const SizedBox(height: 24),
           FilledButton(
             onPressed: _saving ? null : _save,
@@ -191,4 +282,28 @@ class _AmountFormState extends ConsumerState<_AmountForm> {
       ),
     );
   }
+
+  /// "How many shares?" as buttons 1 to 5, and what they come to.
+  List<Widget> _shareChooser(AppLocalizations l10n, int sharePriceUgx) => [
+    Text(l10n.sharesChooseLabel, style: Theme.of(context).textTheme.titleSmall),
+    const SizedBox(height: 8),
+    Wrap(
+      spacing: 8,
+      children: [
+        for (var count = 1; count <= maxSharesPerMeeting; count++)
+          ChoiceChip(
+            label: Text('$count'),
+            selected: _shares == count,
+            onSelected: (_) => setState(() => _shares = count),
+          ),
+      ],
+    ),
+    if (_shares != null) ...[
+      const SizedBox(height: 8),
+      Text(
+        l10n.amountUgx(_shares! * sharePriceUgx),
+        style: Theme.of(context).textTheme.titleMedium,
+      ),
+    ],
+  ];
 }

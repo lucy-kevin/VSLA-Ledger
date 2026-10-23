@@ -48,15 +48,23 @@ class _CompareScreenState extends ConsumerState<CompareScreen> {
     setState(() => _local = const _Waiting());
     final stopwatch = Stopwatch()..start();
 
-    await ref
-        .read(ledgerRepositoryProvider)
-        .recordContribution(
-          groupId: widget.groupId,
-          memberId: widget.memberId,
-          amountUgx: _demoAmountUgx,
-        );
+    _Outcome outcome;
+    try {
+      // Needs a group that saves amounts. A group that saves in shares
+      // refuses a plain amount, and the demo then shows "not saved".
+      await ref
+          .read(ledgerRepositoryProvider)
+          .recordContribution(
+            groupId: widget.groupId,
+            memberId: widget.memberId,
+            amountUgx: _demoAmountUgx,
+          );
+      outcome = _Saved(stopwatch.elapsed);
+    } on Exception {
+      outcome = _Failed(stopwatch.elapsed);
+    }
 
-    if (mounted) setState(() => _local = _Saved(stopwatch.elapsed));
+    if (mounted) setState(() => _local = outcome);
   }
 
   // The old way, on purpose: the screen waits for the network.

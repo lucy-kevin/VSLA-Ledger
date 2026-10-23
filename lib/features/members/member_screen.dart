@@ -48,6 +48,16 @@ class MemberScreen extends ConsumerWidget {
                   label: Text(l10n.recordContributionButton),
                 ),
                 FilledButton.tonalIcon(
+                  onPressed: () => context.push('$here/social-fund'),
+                  icon: const Icon(Icons.volunteer_activism),
+                  label: Text(l10n.recordSocialFundButton),
+                ),
+                FilledButton.tonalIcon(
+                  onPressed: () => context.push('$here/fine'),
+                  icon: const Icon(Icons.gavel),
+                  label: Text(l10n.recordFineButton),
+                ),
+                FilledButton.tonalIcon(
                   onPressed: () => context.push('$here/lend'),
                   icon: const Icon(Icons.call_made),
                   label: Text(l10n.issueLoanButton),

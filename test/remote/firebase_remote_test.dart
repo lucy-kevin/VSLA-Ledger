@@ -170,4 +170,62 @@ void main() {
     expect(await remote.findGroupByJoinCode(group.joinCode), group);
     expect(await remote.findGroupByJoinCode('ZZ0Z1Z'), isNull);
   });
+
+  test(
+    'meetings, shares, charges, social fund and fines survive the trip',
+    () async {
+      // A group made a month ago, so last week's meeting is allowed.
+      final group =
+          await GroupRepository(
+            db: phoneA.db,
+            now: () => DateTime.now().subtract(const Duration(days: 30)),
+          ).createGroup(
+            'Tukolere Wamu',
+            monthlyChargePercent: 10,
+            sharePriceUgx: 2000,
+          );
+      final sarah = await phoneA.groups.addMember(
+        groupId: group.id,
+        name: 'Sarah',
+      );
+      final lastWeek = DateTime.now().subtract(const Duration(days: 7));
+      await phoneA.ledger.recordContribution(
+        groupId: group.id,
+        memberId: sarah.id,
+        shares: 3,
+        meetingDate: lastWeek,
+      );
+      await phoneA.ledger.recordSocialFund(
+        groupId: group.id,
+        memberId: sarah.id,
+        amountUgx: 1000,
+      );
+      await phoneA.ledger.recordFine(
+        groupId: group.id,
+        memberId: sarah.id,
+        amountUgx: 500,
+      );
+      await phoneA.ledger.issueLoan(
+        groupId: group.id,
+        memberId: sarah.id,
+        amountUgx: 100000,
+        meetingDate: lastWeek,
+      );
+      expect(await phoneA.sync.run(), SyncResult.ok);
+
+      final found = await FirebaseRemote(
+        firestore,
+      ).findGroupByJoinCode(group.joinCode);
+      expect(found, group);
+      await phoneB.db.groupDao.insertGroup(found!);
+      expect(await phoneB.sync.run(), SyncResult.ok);
+
+      final onA = await phoneA.db.ledgerDao.watchMemberBalance(sarah.id).first;
+      final onB = await phoneB.db.ledgerDao.watchMemberBalance(sarah.id).first;
+      expect(onB, onA);
+      expect(onB.sharesCount, 3);
+      expect(onB.socialFundUgx, 1000);
+      expect(onB.finesUgx, 500);
+    },
+  );
 }

@@ -33,7 +33,27 @@ class GroupRepository {
   final String Function() _newId;
   final Random _random;
 
-  Future<Group> createGroup(String name) async {
+  /// Makes a group on this phone.
+  ///
+  /// [monthlyChargePercent] is the service charge on loans (0 to 100 percent
+  /// a month of what is still owed). [sharePriceUgx] is what one share costs;
+  /// leave it out for a group that saves free amounts. Both are fixed when
+  /// the group is made.
+  Future<Group> createGroup(
+    String name, {
+    int monthlyChargePercent = 0,
+    int? sharePriceUgx,
+  }) async {
+    if (monthlyChargePercent < 0 || monthlyChargePercent > 100) {
+      throw ArgumentError.value(
+        monthlyChargePercent,
+        'monthlyChargePercent',
+        'must be 0 to 100',
+      );
+    }
+    if (sharePriceUgx != null && sharePriceUgx < 1) {
+      throw ArgumentError.value(sharePriceUgx, 'sharePriceUgx', 'must be 1+');
+    }
     final now = _now();
     final group = Group(
       id: _newId(),
@@ -41,6 +61,8 @@ class GroupRepository {
       joinCode: makeJoinCode(_random),
       createdAt: now,
       updatedAt: now,
+      monthlyChargePercent: monthlyChargePercent,
+      sharePriceUgx: sharePriceUgx,
     );
 
     await _db.transaction(() async {

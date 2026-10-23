@@ -134,10 +134,16 @@ class PocketBaseRemote implements LedgerRemote {
   Map<String, dynamic> _ledgerEntry(RecordModel record) =>
       _fromServer(record)..['serverReceivedAt'] = record.get<String>('created');
 
+  // PocketBase has no "empty" for a number: it sends 0. These two are
+  // optional in the app, and 0 never means anything for them, so 0 is null.
+  static const _zeroMeansNone = {'sharePriceUgx', 'shares'};
+
   // PocketBase sends an empty string for an empty text field; the app uses
   // null.
   Map<String, dynamic> _fromServer(RecordModel record) => {
     for (final MapEntry(:key, :value) in record.toJson().entries)
-      key: value == '' ? null : value,
+      key: value == '' || (_zeroMeansNone.contains(key) && value == 0)
+          ? null
+          : value,
   };
 }

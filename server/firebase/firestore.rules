@@ -34,7 +34,8 @@ service cloud.firestore {
         && request.resource.data.amountUgx is int
         && request.resource.data.amountUgx >= 1
         && request.resource.data.type in
-             ['contribution', 'loan', 'repayment', 'correction'];
+             ['contribution', 'loan', 'repayment', 'correction',
+              'socialFund', 'fine'];
 
       // Append-only. A phone retrying a push sends the same entry again,
       // which is allowed. Changing a money field is refused: mistakes are
@@ -47,7 +48,11 @@ service cloud.firestore {
         && request.resource.data.get('correctsEntryId', null)
              == resource.data.get('correctsEntryId', null)
         && request.resource.data.get('loanId', null)
-             == resource.data.get('loanId', null);
+             == resource.data.get('loanId', null)
+        && request.resource.data.get('shares', null)
+             == resource.data.get('shares', null)
+        && request.resource.data.get('monthlyChargePercent', null)
+             == resource.data.get('monthlyChargePercent', null);
 
       allow delete: if false;
     }

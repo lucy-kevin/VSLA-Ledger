@@ -132,5 +132,12 @@
   "ruleRepaymentMoreThanOwed": "That is more than the member still owes on this loan.",
   "ruleAlreadyCancelled": "That entry is already cancelled.",
   "ruleCannotCancelACorrection": "A cancellation cannot be cancelled. Record the right entry instead.",
-  "ruleLoanHasRepayments": "This loan has repayments. Cancel the repayments first."
+  "ruleLoanHasRepayments": "This loan has repayments. Cancel the repayments first.",
+  "ruleMeetingDateInFuture": "The meeting date cannot be after today.",
+  "ruleMeetingDateBeforeGroup": "The meeting date is before this group was made.",
+  "ruleRepaymentBeforeLoan": "A repayment cannot be dated before the loan.",
+  "ruleSharesRequired": "Choose how many shares were bought.",
+  "ruleGroupHasNoShares": "This group saves amounts, not shares.",
+  "ruleTooManyShares": "A member can buy 1 to {max} shares at one meeting.",
+  "@ruleTooManyShares": { "placeholders": { "max": { "type": "int" } } }
 }

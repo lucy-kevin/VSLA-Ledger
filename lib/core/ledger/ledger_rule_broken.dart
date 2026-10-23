@@ -30,7 +30,29 @@ enum LedgerRule {
 
   /// A loan with repayments cannot be cancelled. Cancel the repayments first.
   loanHasRepayments,
+
+  /// The meeting day is after today.
+  meetingDateInFuture,
+
+  /// The meeting day is before the day the group was made.
+  meetingDateBeforeGroup,
+
+  /// A repayment cannot be dated before the loan it pays back.
+  repaymentBeforeLoan,
+
+  /// The group saves in shares, so the number of shares is needed.
+  sharesRequired,
+
+  /// The group has no share price, so savings are an amount, not shares.
+  groupHasNoShares,
+
+  /// A member buys 1 to [maxSharesPerMeeting] shares at one meeting.
+  tooManyShares,
 }
+
+/// The most shares one member can buy at one meeting. This is the usual VSLA
+/// limit; it stops a slip such as 50 instead of 5.
+const maxSharesPerMeeting = 5;
 
 /// The largest single amount the app accepts, in Uganda shillings.
 ///

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:vsla_ledger/app/async_value_view.dart';
@@ -49,7 +50,22 @@ class _GroupBody extends ConsumerWidget {
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-          child: SelectableText(l10n.joinCode(group.joinCode)),
+          child: Row(
+            children: [
+              Expanded(child: SelectableText(l10n.joinCode(group.joinCode))),
+              IconButton(
+                icon: const Icon(Icons.copy),
+                tooltip: l10n.copyJoinCode,
+                onPressed: () async {
+                  final messenger = ScaffoldMessenger.of(context);
+                  await Clipboard.setData(ClipboardData(text: group.joinCode));
+                  messenger.showSnackBar(
+                    SnackBar(content: Text(l10n.joinCodeCopied)),
+                  );
+                },
+              ),
+            ],
+          ),
         ),
         AsyncValueView(
           value: ref.watch(groupBalanceProvider(group.id)),

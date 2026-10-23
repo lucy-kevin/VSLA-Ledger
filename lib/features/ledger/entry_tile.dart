@@ -26,18 +26,19 @@ class EntryTile extends ConsumerWidget {
         ? const TextStyle(decoration: TextDecoration.lineThrough)
         : null;
 
+    final synced = ref.watch(usesFakeBackendProvider)
+        ? l10n.statusSyncedTest
+        : l10n.statusSynced;
     final details = [
       l10n.entryDate(entry.createdAt.toLocal()),
-      if (line.isWaitingToSync) l10n.statusSavedOnPhone else l10n.statusSynced,
+      if (line.isWaitingToSync) l10n.statusSavedOnPhone else synced,
       if (line.isCancelled) l10n.entryCancelled,
     ];
 
     return ListTile(
       leading: Icon(
         line.isWaitingToSync ? Icons.phone_android : Icons.cloud_done,
-        semanticLabel: line.isWaitingToSync
-            ? l10n.statusSavedOnPhone
-            : l10n.statusSynced,
+        semanticLabel: line.isWaitingToSync ? l10n.statusSavedOnPhone : synced,
       ),
       title: Text(
         '${entryTypeLabel(l10n, entry.type)}  '

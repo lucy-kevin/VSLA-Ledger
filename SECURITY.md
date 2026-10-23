@@ -6,7 +6,7 @@ VSLA Ledger stores financial records of real savings groups, so we take security
 
 **Please don't open a public issue.** Instead, use GitHub's
 [private vulnerability reporting](../../security/advisories/new) for this repository, or email
-the maintainers at **[contact email to be added]**.
+the maintainers at **akevinziyada@researchcoderespond.org**.
 
 Include what you found, how to reproduce it, and what you think the impact is. We'll reply within
 a few days and keep you updated until it's fixed. With your permission, we'll credit you.

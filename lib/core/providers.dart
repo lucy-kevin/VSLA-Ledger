@@ -38,6 +38,12 @@ LedgerRemote ledgerRemote(Ref ref) =>
 @Riverpod(keepAlive: true)
 bool showDemoScreens(Ref ref) => false;
 
+/// True when the app is using the in-app fake server (`BACKEND=fake`). Then
+/// nothing leaves the phone, and the app says so on every screen. main.dart
+/// sets it; tests switch it on directly.
+@Riverpod(keepAlive: true)
+bool usesFakeBackend(Ref ref) => false;
+
 // --- Writing -----------------------------------------------------------------
 
 @Riverpod(keepAlive: true)

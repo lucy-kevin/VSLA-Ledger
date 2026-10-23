@@ -29,29 +29,47 @@ class GroupsScreen extends ConsumerWidget {
         icon: const Icon(Icons.add),
         label: Text(l10n.createGroupButton),
       ),
-      body: AsyncValueView(
-        value: ref.watch(groupsProvider),
-        builder: (groups) {
-          if (groups.isEmpty) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24),
-                child: Text(l10n.noGroupsYet, textAlign: TextAlign.center),
-              ),
-            );
-          }
-          return ListView(
-            children: [
-              for (final group in groups)
-                ListTile(
-                  leading: const Icon(Icons.groups),
-                  title: Text(group.name),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.push('/groups/${group.id}'),
-                ),
-            ],
-          );
-        },
+      body: Column(
+        children: [
+          Expanded(
+            child: AsyncValueView(
+              value: ref.watch(groupsProvider),
+              builder: (groups) {
+                if (groups.isEmpty) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Text(
+                        l10n.noGroupsYet,
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  );
+                }
+                return ListView(
+                  children: [
+                    for (final group in groups)
+                      ListTile(
+                        leading: const Icon(Icons.groups),
+                        title: Text(group.name),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => context.push('/groups/${group.id}'),
+                      ),
+                  ],
+                );
+              },
+            ),
+          ),
+          // Room at the bottom for the button that floats at the right.
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 88),
+            child: Text(
+              l10n.demoDataNotice,
+              textAlign: TextAlign.center,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
+        ],
       ),
     );
   }

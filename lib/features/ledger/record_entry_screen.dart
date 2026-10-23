@@ -87,6 +87,8 @@ class _AmountFormState extends ConsumerState<_AmountForm> {
     super.dispose();
   }
 
+  int? get _typedAmount => int.tryParse(_amount.text);
+
   Future<void> _save() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _saving = true);
@@ -168,7 +170,15 @@ class _AmountFormState extends ConsumerState<_AmountForm> {
             autofocus: true,
             keyboardType: TextInputType.number,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            decoration: InputDecoration(labelText: l10n.amountLabel),
+            decoration: InputDecoration(
+              labelText: l10n.amountLabel,
+              // The amount in full, with separators, so an extra zero shows.
+              helperText: _typedAmount == null
+                  ? null
+                  : l10n.amountUgx(_typedAmount!),
+              helperStyle: Theme.of(context).textTheme.titleMedium,
+            ),
+            onChanged: (_) => setState(() {}),
             validator: _validateAmount,
             onFieldSubmitted: (_) => _save(),
           ),

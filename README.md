@@ -25,7 +25,8 @@ dart run build_runner build --delete-conflicting-outputs
 flutter run --dart-define=BACKEND=fake
 ```
 
-You need Flutter 3.38.9 (stable channel) and an Android device or emulator.
+You need Flutter 3.38.9 (stable channel) and an Android device or emulator. The app is
+Android only for now: background sync and the backup settings are Android code.
 Check your work with `dart format .`, `flutter analyze` and `flutter test`.
 
 ### Run with a real backend
@@ -84,7 +85,8 @@ Please don't report security problems in public issues. See [SECURITY.md](SECURI
 
 ## Maintainers
 
-Built by [Research Code Respond](#) — Kevin Ziyada Aseru and Julian Zaabu Kayikayi.
+Built by Research Code Respond — Kevin Ziyada Aseru and Julian Zaabu Kayikayi.
+Contact: akevinziyada@researchcoderespond.org.
 
 ## Licence
 

@@ -62,6 +62,54 @@ class _VslaAppState extends ConsumerState<VslaApp> {
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: AppLocalizations.supportedLocales,
       routerConfig: _router,
+      builder: (context, child) => _TestModeBanner(
+        show: ref.watch(usesFakeBackendProvider),
+        child: child!,
+      ),
+    );
+  }
+}
+
+/// A strip across the top of every screen when the fake server is in use, so
+/// nobody mistakes a test build for one that really syncs.
+class _TestModeBanner extends StatelessWidget {
+  const _TestModeBanner({required this.show, required this.child});
+
+  final bool show;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!show) return child;
+    final colors = Theme.of(context).colorScheme;
+
+    return Column(
+      children: [
+        Material(
+          color: colors.tertiaryContainer,
+          child: SafeArea(
+            bottom: false,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Text(
+                AppLocalizations.of(context).testModeBanner,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                  color: colors.onTertiaryContainer,
+                ),
+              ),
+            ),
+          ),
+        ),
+        Expanded(
+          // The banner already covers the status bar.
+          child: MediaQuery.removePadding(
+            context: context,
+            removeTop: true,
+            child: child,
+          ),
+        ),
+      ],
     );
   }
 }

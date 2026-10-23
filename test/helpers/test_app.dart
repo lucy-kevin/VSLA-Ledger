@@ -14,10 +14,14 @@ import 'test_database.dart';
 /// The whole app, wired the way main.dart wires it, but with an in-memory
 /// database and the fake server.
 class TestApp {
-  TestApp({this.withDemoScreens = false, LedgerRemote? remote})
-    : _remote = remote;
+  TestApp({
+    this.withDemoScreens = false,
+    this.usesFakeBackend = false,
+    LedgerRemote? remote,
+  }) : _remote = remote;
 
   final bool withDemoScreens;
+  final bool usesFakeBackend;
   final LedgerRemote? _remote;
 
   final AppDatabase db = newTestDatabase();
@@ -46,6 +50,7 @@ class TestApp {
           deviceIdProvider.overrideWithValue('test-phone'),
           ledgerRemoteProvider.overrideWithValue(_remote ?? server),
           showDemoScreensProvider.overrideWithValue(withDemoScreens),
+          usesFakeBackendProvider.overrideWithValue(usesFakeBackend),
           onlineChangesProvider.overrideWith((ref) => _connection.stream),
         ],
         child: const VslaApp(),

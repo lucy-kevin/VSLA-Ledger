@@ -39,8 +39,8 @@ Three things the codebase must always demonstrate:
 | Background sync | `workmanager` |
 | Connectivity hint | `connectivity_plus` |
 | IDs | `uuid` (v4, generated on device) |
-| Backends | `pocketbase` (self-hosted), `cloud_firestore` (vendor comparison), `supabase_flutter` (later) |
-| Phone-to-phone | `nearby_connections` (behind its own `PeerSync` interface) |
+| Backends | `pocketbase` (self-hosted), `cloud_firestore` (vendor comparison). Others (for example Supabase) can be added behind `LedgerRemote` |
+| Phone-to-phone | **Not built.** Planned behind its own `PeerSync` interface (`nearby_connections` is Android only and was last released in 2025) |
 | Encryption | SQLCipher via `sqlite3` 3.x + `flutter_secure_storage`, **after the talk** (`sqlcipher_flutter_libs` is end-of-life) |
 | Lints | `very_good_analysis` |
 | Tests | `flutter_test`, `mocktail`, Drift in-memory database |
@@ -65,8 +65,9 @@ maintained), and record why in `context.md`. Prefer fewer dependencies.
 5. **Money is whole Uganda shillings in `int`.** Never `double` for money.
 6. **IDs are UUID v4 generated on the device.** Nothing waits for a server-issued ID.
 7. **Vendor packages (`pocketbase`, `cloud_firestore`, `firebase_*`, `supabase_flutter`,
-   `nearby_connections`) may only be imported inside `lib/remote/` (or `lib/peer/` for
-   nearby).** CI fails the build otherwise. Vendor types never leave an adapter.
+   `nearby_connections`) may only be imported inside `lib/remote/` (or `lib/peer/` if
+   phone-to-phone is ever built).** CI fails the build otherwise. Vendor types never leave an
+   adapter.
 8. **The `fake` backend must always work.** `flutter run --dart-define=BACKEND=fake` runs the
    whole app with no server and no internet. Never break this; it's how contributors start.
 9. **Pushes are idempotent.** The server upserts by `id`, so retrying a push is harmless.
@@ -89,10 +90,10 @@ lib/
     sync/                # LedgerRemote interface, SyncService, sync triggers
     providers.dart       # Core Riverpod providers
   features/
-    groups/  members/  ledger/  nearby_share/   # screens, widgets, controllers per feature
+    groups/  members/  ledger/  demo/   # screens, widgets, controllers per feature
   remote/                # ONLY place backend vendor packages are imported
     pocketbase_remote.dart  firebase_remote.dart  fake_remote.dart
-  peer/                  # PeerSync interface + nearby_connections adapter
+  peer/                  # (not built yet) PeerSync interface + nearby adapter
   l10n/                  # ARB files (app_en.arb; app_lg.arb for Luganda later)
 test/                    # mirrors lib/
 integration_test/

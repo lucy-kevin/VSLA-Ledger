@@ -35,6 +35,7 @@ Future<void> main() async {
         // This one line is the whole "swap the backend" story.
         ledgerRemoteProvider.overrideWithValue(remote),
         showDemoScreensProvider.overrideWithValue(demoMode),
+        usesFakeBackendProvider.overrideWithValue(backend == 'fake'),
       ],
       child: const VslaApp(),
     ),

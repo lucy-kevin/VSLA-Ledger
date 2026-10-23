@@ -21,10 +21,27 @@ class BalanceCard extends StatelessWidget {
       margin: const EdgeInsets.all(16),
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Row(
+        child: Column(
           children: [
-            Expanded(child: _Figure(savingsLabel, balance.savingsUgx)),
-            Expanded(child: _Figure(loansLabel, balance.loansOutstandingUgx)),
+            Row(
+              children: [
+                Expanded(child: _Figure(savingsLabel, balance.savingsUgx)),
+                Expanded(
+                  child: _Figure(loansLabel, balance.loansOutstandingUgx),
+                ),
+              ],
+            ),
+            // Two phones working offline can cancel a loan while a repayment
+            // is recorded against it. Showing a negative number quietly
+            // would hide that, so say it needs a look.
+            if (balance.loansOutstandingUgx < 0)
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: Text(
+                  AppLocalizations.of(context).loansNeedChecking,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
+              ),
           ],
         ),
       ),

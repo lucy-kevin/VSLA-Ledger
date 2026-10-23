@@ -76,6 +76,12 @@
   },
   "statusSavedOnPhone": "Saved on phone",
   "statusSynced": "Synced",
+  "statusSyncedTest": "Synced (test)",
+  "testModeBanner": "TEST MODE: records stay on this phone and are not sent to any server",
+  "demoDataNotice": "Demo version: use made-up names and amounts only. Records are not encrypted yet.",
+  "loansNeedChecking": "Repayments are more than the loans. Check the history.",
+  "copyJoinCode": "Copy join code",
+  "joinCodeCopied": "Join code copied",
   "entryCancelled": "Cancelled",
 
   "cancelEntryAction": "Cancel this entry",

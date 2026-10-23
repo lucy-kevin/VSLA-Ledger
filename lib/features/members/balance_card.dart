@@ -34,7 +34,7 @@ class BalanceCard extends StatelessWidget {
             // Two phones working offline can cancel a loan while a repayment
             // is recorded against it. Showing a negative number quietly
             // would hide that, so say it needs a look.
-            if (balance.loansOutstandingUgx < 0)
+            if (balance.repaymentsWithoutLoanUgx > 0)
               Padding(
                 padding: const EdgeInsets.only(top: 12),
                 child: Text(

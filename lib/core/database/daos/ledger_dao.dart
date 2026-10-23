@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart';
 import 'package:vsla_ledger/core/database/app_database.dart';
 import 'package:vsla_ledger/core/database/tables.dart';
+import 'package:vsla_ledger/core/ledger/balance_calculator.dart';
 import 'package:vsla_ledger/core/models/balance.dart';
 import 'package:vsla_ledger/core/models/entry_line.dart';
 import 'package:vsla_ledger/core/models/entry_type.dart';
@@ -93,46 +94,16 @@ class LedgerDao extends DatabaseAccessor<AppDatabase> with _$LedgerDaoMixin {
     );
   }
 
-  Stream<Balance> watchMemberBalance(String memberId) =>
-      _watchBalance(column: 'member_id', id: memberId);
+  /// A group's entries, including corrections.
+  Stream<List<LedgerEntry>> watchEntriesForGroup(String groupId) =>
+      (select(ledgerEntries)..where((e) => e.groupId.equals(groupId))).watch();
+
+  /// The member's totals. Worked out in Dart from the entries (see
+  /// [computeBalance]), so the screens and the forms share one set of rules.
+  Stream<Balance> watchMemberBalance(String memberId) => (select(
+    ledgerEntries,
+  )..where((e) => e.memberId.equals(memberId))).watch().map(computeBalance);
 
   Stream<Balance> watchGroupBalance(String groupId) =>
-      _watchBalance(column: 'group_id', id: groupId);
-
-  // One query for both balances. `column` is only ever one of the two fixed
-  // names above, never user input, so putting it in the SQL is safe.
-  //
-  // An entry counts unless it is a correction, or a correction cancels it.
-  Stream<Balance> _watchBalance({required String column, required String id}) {
-    final contribution = EntryType.contribution.name;
-    final loan = EntryType.loan.name;
-    final repayment = EntryType.repayment.name;
-    final correction = EntryType.correction.name;
-
-    return customSelect(
-      '''
-      SELECT
-        COALESCE(SUM(CASE WHEN e.type = '$contribution'
-                          THEN e.amount_ugx END), 0) AS savings,
-        COALESCE(SUM(CASE WHEN e.type = '$loan'
-                          THEN e.amount_ugx END), 0)
-          - COALESCE(SUM(CASE WHEN e.type = '$repayment'
-                              THEN e.amount_ugx END), 0) AS loans_outstanding
-      FROM ledger_entries e
-      WHERE e.$column = ?
-        AND e.type != '$correction'
-        AND NOT EXISTS (
-          SELECT 1 FROM ledger_entries c
-          WHERE c.type = '$correction' AND c.corrects_entry_id = e.id
-        )
-      ''',
-      variables: [Variable.withString(id)],
-      readsFrom: {ledgerEntries},
-    ).watchSingle().map(
-      (row) => Balance(
-        savingsUgx: row.read<int>('savings'),
-        loansOutstandingUgx: row.read<int>('loans_outstanding'),
-      ),
-    );
-  }
+      watchEntriesForGroup(groupId).map(computeBalance);
 }

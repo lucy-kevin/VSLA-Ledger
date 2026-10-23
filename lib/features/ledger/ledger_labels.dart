@@ -8,6 +8,8 @@ String entryTypeLabel(AppLocalizations l10n, EntryType type) => switch (type) {
   EntryType.loan => l10n.entryTypeLoan,
   EntryType.repayment => l10n.entryTypeRepayment,
   EntryType.correction => l10n.entryTypeCorrection,
+  EntryType.socialFund => l10n.entryTypeSocialFund,
+  EntryType.fine => l10n.entryTypeFine,
 };
 
 /// The message shown when the app refuses a write. Adding a new rule without

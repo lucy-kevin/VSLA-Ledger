@@ -70,6 +70,8 @@
   "entryTypeLoan": "Loan",
   "entryTypeRepayment": "Repayment",
   "entryTypeCorrection": "Cancellation",
+  "entryTypeSocialFund": "Social fund",
+  "entryTypeFine": "Fine",
   "entryDate": "{date}",
   "@entryDate": {
     "placeholders": { "date": { "type": "DateTime", "format": "yMMMd" } }

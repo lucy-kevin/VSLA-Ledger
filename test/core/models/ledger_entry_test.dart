@@ -31,6 +31,9 @@ void main() {
       'serverReceivedAt': null,
       'correctsEntryId': null,
       'loanId': null,
+      'meetingDate': null,
+      'shares': null,
+      'monthlyChargePercent': null,
     });
   });
 

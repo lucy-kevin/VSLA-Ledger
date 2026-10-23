@@ -16,6 +16,9 @@ class Groups extends Table {
   TextColumn get joinCode => text()();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
+  IntColumn get monthlyChargePercent =>
+      integer().withDefault(const Constant(0))();
+  IntColumn get sharePriceUgx => integer().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};
@@ -56,6 +59,11 @@ class LedgerEntries extends Table {
 
   /// For a repayment: the id of the loan entry it pays back.
   TextColumn get loanId => text().nullable()();
+
+  /// The meeting day (stored as a date at midnight). Null on older rows.
+  DateTimeColumn get meetingDate => dateTime().nullable()();
+  IntColumn get shares => integer().nullable()();
+  IntColumn get monthlyChargePercent => integer().nullable()();
 
   @override
   Set<Column> get primaryKey => {id};

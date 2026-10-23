@@ -34,13 +34,24 @@ class AppDatabase extends _$AppDatabase {
       );
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) async {
       await m.createAll();
       await _protectLedgerFromChanges();
+    },
+    onUpgrade: (m, from, to) async {
+      if (from < 2) {
+        // Meetings, service charge, shares, social fund and fines. Every new
+        // column is optional or has a default, so old rows stay as they are.
+        await m.addColumn(groups, groups.monthlyChargePercent);
+        await m.addColumn(groups, groups.sharePriceUgx);
+        await m.addColumn(ledgerEntries, ledgerEntries.meetingDate);
+        await m.addColumn(ledgerEntries, ledgerEntries.shares);
+        await m.addColumn(ledgerEntries, ledgerEntries.monthlyChargePercent);
+      }
     },
   );
 

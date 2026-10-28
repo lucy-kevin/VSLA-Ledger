@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:vsla_ledger/core/ledger/ledger_rule_broken.dart';
+import 'package:vsla_ledger/app/save_guard.dart';
+import 'package:vsla_ledger/app/theme.dart';
 import 'package:vsla_ledger/core/models/entry_line.dart';
 import 'package:vsla_ledger/core/models/entry_type.dart';
 import 'package:vsla_ledger/core/providers.dart';
 import 'package:vsla_ledger/features/ledger/ledger_labels.dart';
 import 'package:vsla_ledger/l10n/app_localizations.dart';
 
-/// One line of history: what, how much, when, and whether it has synced.
+/// One line of history: what, how much, and whether it has synced. The day
+/// is the heading the line sits under.
 ///
 /// A cancelled entry stays visible but crossed out, like on paper.
 class EntryTile extends ConsumerWidget {
@@ -21,30 +23,64 @@ class EntryTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = AppLocalizations.of(context);
+    final theme = Theme.of(context);
     final entry = line.entry;
-    final crossedOut = line.isCancelled
-        ? const TextStyle(decoration: TextDecoration.lineThrough)
-        : null;
+    final style = entryStyleOf(context, entry.type);
+    // A cancelled line fades and is crossed out, whatever its colour was.
+    final color = line.isCancelled ? theme.disabledColor : style.color;
+    final strike = line.isCancelled ? TextDecoration.lineThrough : null;
 
+    final synced = ref.watch(usesFakeBackendProvider)
+        ? l10n.statusSyncedTest
+        : l10n.statusSynced;
+    final status = line.isWaitingToSync ? l10n.statusSavedOnPhone : synced;
     final details = [
-      l10n.entryDate(entry.createdAt.toLocal()),
-      if (line.isWaitingToSync) l10n.statusSavedOnPhone else l10n.statusSynced,
+      if (entry.shares != null) l10n.sharesBought(entry.shares!),
+      status,
       if (line.isCancelled) l10n.entryCancelled,
     ];
 
     return ListTile(
-      leading: Icon(
-        line.isWaitingToSync ? Icons.phone_android : Icons.cloud_done,
-        semanticLabel: line.isWaitingToSync
-            ? l10n.statusSavedOnPhone
-            : l10n.statusSynced,
+      minVerticalPadding: 12,
+      leading: CircleAvatar(
+        backgroundColor: color.withValues(alpha: 0.14),
+        child: Icon(style.icon, color: color),
       ),
-      title: Text(
-        '${entryTypeLabel(l10n, entry.type)}  '
-        '${l10n.amountUgx(entry.amountUgx)}',
-        style: crossedOut,
+      // One piece of text ("Savings  UGX 10,000") so a screen reader reads
+      // the whole line, with the amount in bold.
+      title: Text.rich(
+        TextSpan(
+          children: [
+            TextSpan(
+              text: entryTypeLabel(l10n, entry.type),
+              style: TextStyle(decoration: strike),
+            ),
+            const TextSpan(text: '  '),
+            TextSpan(
+              text: l10n.amountUgx(entry.amountUgx),
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                color: line.isCancelled ? null : color,
+                decoration: strike,
+              ),
+            ),
+          ],
+        ),
       ),
-      subtitle: Text(details.join(' · ')),
+      subtitle: Row(
+        children: [
+          Icon(
+            line.isWaitingToSync
+                ? Icons.phone_android
+                : Icons.cloud_done_outlined,
+            size: 14,
+            color: theme.colorScheme.onSurfaceVariant,
+            semanticLabel: status,
+          ),
+          const SizedBox(width: 6),
+          Flexible(child: Text(details.join(' · '))),
+        ],
+      ),
       trailing: _canBeCancelled
           ? PopupMenuButton<void>(
               itemBuilder: (context) => [
@@ -60,7 +96,6 @@ class EntryTile extends ConsumerWidget {
 
   Future<void> _confirmCancel(BuildContext context, WidgetRef ref) async {
     final l10n = AppLocalizations.of(context);
-    final messenger = ScaffoldMessenger.of(context);
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -80,12 +115,10 @@ class EntryTile extends ConsumerWidget {
     );
     if (confirmed != true) return;
 
-    try {
-      await ref.read(ledgerRepositoryProvider).cancelEntry(line.entry.id);
-    } on LedgerRuleBroken catch (refusal) {
-      messenger.showSnackBar(
-        SnackBar(content: Text(ledgerRuleMessage(l10n, refusal.rule))),
-      );
-    }
+    if (!context.mounted) return;
+    await saveOrExplain(
+      context,
+      () => ref.read(ledgerRepositoryProvider).cancelEntry(line.entry.id),
+    );
   }
 }

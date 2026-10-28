@@ -21,6 +21,8 @@ void main() {
       'joinCode': 'TKW482',
       'createdAt': '2026-10-13T09:00:00.000Z',
       'updatedAt': '2026-10-14T09:00:00.000Z',
+      'monthlyChargePercent': 0,
+      'sharePriceUgx': null,
     });
   });
 }

@@ -79,12 +79,12 @@ Future<void> main() async {
         amountUgx: 10000,
       );
 
-      expect(await phoneA.sync.run(), isTrue);
+      expect(await phoneA.sync.run(), SyncResult.ok);
       expect(await phoneA.db.outboxDao.watchPendingCount().first, 0);
 
       // Phone B already knows the group (joining by code comes later).
       await phoneB.db.groupDao.insertGroup(group);
-      expect(await phoneB.sync.run(), isTrue);
+      expect(await phoneB.sync.run(), SyncResult.ok);
 
       final onB = await phoneB.db.ledgerDao
           .watchEntriesForMember(sarah.id)
@@ -166,4 +166,75 @@ Future<void> main() async {
     // Contains 0 and 1, which join codes never use, so no group has it.
     expect(await remote.findGroupByJoinCode('ZZ0Z1Z'), isNull);
   }, skip: skip);
+
+  test(
+    'meetings, shares, charges, social fund and fines survive the trip',
+    () async {
+      // A group made a month ago, so last week's meeting is allowed.
+      final group =
+          await GroupRepository(
+            db: phoneA.db,
+            now: () => DateTime.now().subtract(const Duration(days: 30)),
+          ).createGroup(
+            'Tukolere Wamu',
+            monthlyChargePercent: 10,
+            sharePriceUgx: 2000,
+          );
+      final sarah = await phoneA.groups.addMember(
+        groupId: group.id,
+        name: 'Sarah',
+      );
+      final lastWeek = DateTime.now().subtract(const Duration(days: 7));
+      await phoneA.ledger.recordContribution(
+        groupId: group.id,
+        memberId: sarah.id,
+        shares: 3,
+        meetingDate: lastWeek,
+      );
+      await phoneA.ledger.recordSocialFund(
+        groupId: group.id,
+        memberId: sarah.id,
+        amountUgx: 1000,
+      );
+      final fine = await phoneA.ledger.recordFine(
+        groupId: group.id,
+        memberId: sarah.id,
+        amountUgx: 500,
+      );
+      await phoneA.ledger.issueLoan(
+        groupId: group.id,
+        memberId: sarah.id,
+        amountUgx: 100000,
+        meetingDate: lastWeek,
+      );
+      await phoneA.ledger.cancelEntry(fine.id);
+      expect(await phoneA.sync.run(), SyncResult.ok);
+
+      // The group's settings come back from the server as they were sent.
+      final found = await PocketBaseRemote.connect(
+        serverUrl,
+      ).findGroupByJoinCode(group.joinCode);
+      expect(found!.monthlyChargePercent, 10);
+      expect(found.sharePriceUgx, 2000);
+
+      await phoneB.db.groupDao.insertGroup(found);
+      expect(await phoneB.sync.run(), SyncResult.ok);
+
+      final onA = await phoneA.db.ledgerDao.watchMemberBalance(sarah.id).first;
+      final onB = await phoneB.db.ledgerDao.watchMemberBalance(sarah.id).first;
+      expect(onB, onA);
+      expect(onB.sharesCount, 3);
+      expect(onB.savingsUgx, 6000);
+      expect(onB.socialFundUgx, 1000);
+      expect(onB.finesUgx, 0);
+      final entries = await phoneB.db.ledgerDao.getEntriesForMember(sarah.id);
+      final loan = entries.singleWhere((e) => e.type.name == 'loan');
+      expect(loan.monthlyChargePercent, 10);
+      expect(
+        loan.meetingDay,
+        DateTime.utc(lastWeek.year, lastWeek.month, lastWeek.day),
+      );
+    },
+    skip: skip,
+  );
 }

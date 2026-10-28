@@ -1,4 +1,4 @@
-# Replace <kevin-github-username> with real GitHub usernames once the repo exists.
-*                   @<kevin-github-username>
-/docs/              @<kevin-github-username>
-/lib/l10n/          @<kevin-github-username>
+# Who is asked to review changes. Add more maintainers here as the project grows.
+*                   @lucy-kevin
+/docs/              @lucy-kevin
+/lib/l10n/          @lucy-kevin

@@ -26,8 +26,8 @@ class GroupNotFound extends JoinResult {
   const GroupNotFound();
 }
 
-/// The server could not be reached. Joining is the one thing that needs the
-/// internet: the phone has nothing to show until it has the group.
+/// The server could not be reached. Joining is the one thing that needs a
+/// connection: the phone has nothing to show until it has the group.
 class JoinNeedsConnection extends JoinResult {
   const JoinNeedsConnection();
 }

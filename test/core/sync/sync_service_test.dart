@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:vsla_ledger/core/database/app_database.dart';
+import 'package:vsla_ledger/core/database/daos/outbox_dao.dart';
 import 'package:vsla_ledger/core/ledger/ledger_repository.dart';
 import 'package:vsla_ledger/core/models/group.dart';
 import 'package:vsla_ledger/core/models/ledger_entry.dart';
@@ -32,7 +33,7 @@ class Phone {
 
   final AppDatabase db;
   late final LedgerRepository ledger;
-  late final SyncService sync;
+  late SyncService sync;
 
   Future<void> joinGroup() => db.groupDao.insertGroup(group);
 
@@ -72,6 +73,27 @@ class SlowRemote implements LedgerRemote {
       inner.findGroupByJoinCode(joinCode);
 }
 
+/// A server that refuses one record, the way a real server's rules can.
+class RefusingRemote implements LedgerRemote {
+  RefusingRemote(this.inner, {required this.refusedEntityId});
+
+  final LedgerRemote inner;
+  final String refusedEntityId;
+
+  @override
+  Future<Set<int>> push(List<OutboxItem> items) => inner.push([
+    for (final item in items)
+      if (item.entityId != refusedEntityId) item,
+  ]);
+
+  @override
+  Future<PullResult> pullSince(String groupId, DateTime? since) =>
+      inner.pullSince(groupId, since);
+  @override
+  Future<Group?> findGroupByJoinCode(String joinCode) =>
+      inner.findGroupByJoinCode(joinCode);
+}
+
 void main() {
   late FakeLedgerRemote server;
   late Phone phone;
@@ -92,7 +114,7 @@ void main() {
       {for (final entry in recorded) entry.id},
     );
 
-    expect(await phone.sync.run(), isFalse);
+    expect(await phone.sync.run(), SyncResult.unreachable);
 
     final stillWaiting = await phone.db.outboxDao.nextBatch(limit: 50);
     expect(stillWaiting, hasLength(5));
@@ -101,7 +123,7 @@ void main() {
     expect(server.entries, isEmpty);
 
     server.offline = false;
-    expect(await phone.sync.run(), isTrue);
+    expect(await phone.sync.run(), SyncResult.ok);
 
     expect(await phone.waitingToSync(), isEmpty);
     expect(
@@ -181,7 +203,7 @@ void main() {
     final before = await phone.db.syncStateDao.read('lastPulledAt:$groupId');
 
     server.offline = true;
-    expect(await phone.sync.run(), isFalse);
+    expect(await phone.sync.run(), SyncResult.unreachable);
 
     expect(
       await phone.db.syncStateDao.read('lastPulledAt:$groupId'),
@@ -225,5 +247,56 @@ void main() {
       server.entries.map((entry) => entry.id),
       contains(savedDuringSync.id),
     );
+  });
+
+  // A phone with two records, where the server refuses the first.
+  Future<(Phone, LedgerEntry, LedgerEntry)> phoneWithOneRefusedRecord() async {
+    final refusedPhone = Phone('phone-d', server);
+    addTearDown(refusedPhone.db.close);
+    await refusedPhone.joinGroup();
+    final bad = await refusedPhone.contribute(1000);
+    final good = await refusedPhone.contribute(2000);
+    refusedPhone.sync = SyncService(
+      db: refusedPhone.db,
+      remote: RefusingRemote(server, refusedEntityId: bad.id),
+    );
+    return (refusedPhone, bad, good);
+  }
+
+  test('a refused record does not stop the others being sent', () async {
+    final (refusedPhone, bad, good) = await phoneWithOneRefusedRecord();
+
+    expect(await refusedPhone.sync.run(), SyncResult.refused);
+
+    expect(server.entries.map((entry) => entry.id), [good.id]);
+    expect(await refusedPhone.waitingToSync(), {bad.id});
+  });
+
+  test('a refused record does not stop other phones arriving', () async {
+    final (refusedPhone, _, _) = await phoneWithOneRefusedRecord();
+    final otherPhone = Phone('phone-e', server);
+    addTearDown(otherPhone.db.close);
+    await otherPhone.joinGroup();
+    final fromOtherPhone = await otherPhone.contribute(7000);
+    await otherPhone.sync.run();
+
+    expect(await refusedPhone.sync.run(), SyncResult.refused);
+
+    final received = await refusedPhone.entries();
+    expect(received.map((entry) => entry.id), contains(fromOtherPhone.id));
+  });
+
+  test('after $maxRefusals refusals it is left alone but kept', () async {
+    final (refusedPhone, bad, _) = await phoneWithOneRefusedRecord();
+
+    for (var i = 0; i < maxRefusals; i++) {
+      expect(await refusedPhone.sync.run(), SyncResult.refused);
+    }
+    expect(await refusedPhone.db.outboxDao.watchStuckCount().first, 1);
+
+    // From now on a sync is clean, and the record is still on the phone.
+    expect(await refusedPhone.sync.run(), SyncResult.ok);
+    expect(await refusedPhone.waitingToSync(), {bad.id});
+    expect(await refusedPhone.db.outboxDao.nextBatch(limit: 50), isEmpty);
   });
 }

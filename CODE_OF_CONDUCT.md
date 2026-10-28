@@ -23,7 +23,7 @@ as its code of conduct. Please read it in full. The short version, in our own wo
 ## Reporting
 
 If something happens that makes you uncomfortable, contact the maintainers privately at
-**[contact email to be added]**. Reports are kept confidential. You will get a reply within a
+**akevinziyada@researchcoderespond.org**. Reports are kept confidential. You will get a reply within a
 few days.
 
 Maintainers may remove comments, close issues, or ban contributors who break this code, after

@@ -19,6 +19,9 @@ class GroupDao extends DatabaseAccessor<AppDatabase> with _$GroupDaoMixin {
 
   Future<List<Group>> getAllGroups() => select(groups).get();
 
+  Future<Group?> getGroup(String id) =>
+      (select(groups)..where((g) => g.id.equals(id))).getSingleOrNull();
+
   Stream<List<Group>> watchAllGroups() =>
       (select(groups)..orderBy([(g) => OrderingTerm.asc(g.name)])).watch();
 

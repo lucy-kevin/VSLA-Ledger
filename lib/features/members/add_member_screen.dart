@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:vsla_ledger/app/save_guard.dart';
 import 'package:vsla_ledger/core/providers.dart';
 import 'package:vsla_ledger/l10n/app_localizations.dart';
 
@@ -31,15 +32,22 @@ class _AddMemberScreenState extends ConsumerState<AddMemberScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _saving = true);
 
-    await ref
-        .read(groupRepositoryProvider)
-        .addMember(
-          groupId: widget.groupId,
-          name: _name.text,
-          phone: _phone.text,
-        );
+    final repository = ref.read(groupRepositoryProvider);
+    final saved = await saveOrExplain(
+      context,
+      () => repository.addMember(
+        groupId: widget.groupId,
+        name: _name.text,
+        phone: _phone.text,
+      ),
+    );
 
-    if (mounted) context.pop();
+    if (!mounted) return;
+    if (saved) {
+      context.pop();
+    } else {
+      setState(() => _saving = false);
+    }
   }
 
   @override

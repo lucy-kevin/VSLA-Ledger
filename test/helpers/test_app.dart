@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:vsla_ledger/app/app.dart';
 import 'package:vsla_ledger/core/database/app_database.dart';
 import 'package:vsla_ledger/core/providers.dart';
+import 'package:vsla_ledger/core/sync/ledger_remote.dart';
 import 'package:vsla_ledger/remote/fake_remote.dart';
 
 import 'test_database.dart';
@@ -13,6 +14,16 @@ import 'test_database.dart';
 /// The whole app, wired the way main.dart wires it, but with an in-memory
 /// database and the fake server.
 class TestApp {
+  TestApp({
+    this.withDemoScreens = false,
+    this.usesFakeBackend = false,
+    LedgerRemote? remote,
+  }) : _remote = remote;
+
+  final bool withDemoScreens;
+  final bool usesFakeBackend;
+  final LedgerRemote? _remote;
+
   final AppDatabase db = newTestDatabase();
   final FakeLedgerRemote server = FakeLedgerRemote();
 
@@ -37,7 +48,9 @@ class TestApp {
         overrides: [
           appDatabaseProvider.overrideWithValue(db),
           deviceIdProvider.overrideWithValue('test-phone'),
-          ledgerRemoteProvider.overrideWithValue(server),
+          ledgerRemoteProvider.overrideWithValue(_remote ?? server),
+          showDemoScreensProvider.overrideWithValue(withDemoScreens),
+          usesFakeBackendProvider.overrideWithValue(usesFakeBackend),
           onlineChangesProvider.overrideWith((ref) => _connection.stream),
         ],
         child: const VslaApp(),

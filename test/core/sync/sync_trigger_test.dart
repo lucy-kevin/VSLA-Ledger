@@ -80,6 +80,26 @@ void main() {
     expect(server.entries, hasLength(2));
   });
 
+  test('coming back to the app sends what is waiting, if online', () async {
+    server.offline = true;
+    trigger.onlineChanged(online: false);
+    await contribute();
+
+    trigger.appResumed();
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+    expect(
+      (await db.outboxDao.nextBatch(limit: 50)).single.attempts,
+      0,
+      reason: 'offline: nothing tried',
+    );
+
+    server.offline = false;
+    trigger
+      ..onlineChanged(online: true)
+      ..appResumed();
+    await eventually(() async => await waiting() == 0);
+  });
+
   group('isOnline', () {
     test('no network at all is offline', () {
       expect(isOnline([ConnectivityResult.none]), isFalse);

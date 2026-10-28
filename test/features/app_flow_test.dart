@@ -144,8 +144,15 @@ void main() {
     await tapText(tester, 'Cancel entry');
     await record(tester, 'Savings', '10000');
 
+    // Both the word and the amount are crossed out.
     final crossedOut = tester.widget<Text>(find.text('Savings  UGX 12,000'));
-    expect(crossedOut.style?.decoration, TextDecoration.lineThrough);
+    final parts = (crossedOut.textSpan! as TextSpan).children!
+        .cast<TextSpan>()
+        .where((part) => part.text!.trim().isNotEmpty);
+    expect(parts, hasLength(2));
+    for (final part in parts) {
+      expect(part.style?.decoration, TextDecoration.lineThrough);
+    }
     expect(find.text('Cancellation  UGX 12,000'), findsOneWidget);
     // The savings figure only counts the right entry.
     expect(find.text('UGX 10,000'), findsOneWidget);

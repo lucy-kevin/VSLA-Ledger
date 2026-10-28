@@ -3,8 +3,8 @@
 An open-source, **offline-first** Flutter app for Village Savings and Loan Associations.
 
 A treasurer records weekly savings, loans and repayments on a phone — even with no signal.
-Records are saved on the phone first and sync to a server (or straight to another phone)
-when a connection appears. Nothing is lost, and no single cloud company owns the data.
+Records are saved on the phone first and sync to a server when a connection appears. Nothing
+is lost, and no single cloud company owns the data.
 
 > Status: early development. Built as the live demo for the droidcon Uganda 2026 talk
 > *"Building for Ourselves: Why Open Source and Local-First Mobile Apps Matter for African
@@ -25,22 +25,63 @@ dart run build_runner build --delete-conflicting-outputs
 flutter run --dart-define=BACKEND=fake
 ```
 
-You need Flutter (stable channel) and an Android device or emulator.
+You need Flutter 3.38.9 (stable channel) and an Android device or emulator. The app is
+Android only for now: background sync and the backup settings are Android code.
+Check your work with `dart format .`, `flutter analyze` and `flutter test`.
 
-### Run with a real backend (PocketBase)
+### Run with a real backend
 
-See [`server/pocketbase/README.md`](server/pocketbase/README.md), then:
+**PocketBase** (open source, you run it yourself): see
+[`server/pocketbase/README.md`](server/pocketbase/README.md), then
 
 ```bash
 flutter run --dart-define=BACKEND=pocketbase --dart-define=PB_URL=http://10.0.2.2:8090
 ```
 
+`10.0.2.2` is the Android emulator's name for your computer. On a real phone, use your
+computer's IP address on the same Wi-Fi.
+
+**Firebase** (Google's cloud, here for comparison): see
+[`server/firebase/README.md`](server/firebase/README.md), then
+
+```bash
+flutter run --dart-define=BACKEND=firebase
+```
+
+### Talk demo settings
+
+`--dart-define=DEMO=true` adds a Compare screen that saves the same record two ways (on the
+phone first, or waiting for the server) and times both. `--dart-define=DEMO_DELAY_MS=3000`
+makes every server request wait 3 seconds, to show a slow network.
+
+## What it does
+
+- Groups, members, and a **meeting screen** to record a whole meeting quickly.
+- Savings (any amount, or in **shares** if the group sets a share price), **social fund** and
+  **fines**, each for the day of the meeting, which can be an earlier day.
+- Loans with a **monthly service charge** and repayments (charges are paid first).
+- Mistakes are cancelled, never edited. Everything works with no signal and syncs later.
+
+## What it does not do yet
+
+- No login: anyone who can reach the server and has a group's join code can read and write
+  that group. **Demo servers only. Use made-up data.**
+- The phone's database is not encrypted yet.
+- Group settings (charge, share price) cannot be changed after the group is made.
+- No share-out at the end of a cycle, no reports, no member editing, only English.
+- The loan charge rules are a first version and have not been checked by a real treasurer.
+- Android only. Phone-to-phone sharing is not built.
+
+Each of these is a good project: see [docs/roadmap.md](docs/roadmap.md).
+
 ## How it works
 
 - The phone's SQLite database (via [Drift](https://drift.simonbinder.eu/)) is the source of truth.
 - Every change is written to the database **and** an outbox in one transaction.
-- A sync service pushes the outbox and pulls new records when a network is available.
-- Money records are **append-only**: mistakes are fixed with a correction entry, like a paper ledger.
+- The app syncs after each save, when the network comes back, when you reopen it, every ~15
+  minutes in the background (Android), and when you tap **Sync now**.
+- Money records are **append-only**: a mistake is cancelled and the right amount recorded
+  again, like crossing out a line in a paper ledger. The phone and the servers refuse edits.
 - Backends (PocketBase, Firebase, a fake one for development) all implement one Dart interface,
   `LedgerRemote`.
 
@@ -57,12 +98,16 @@ Please read [CONTRIBUTING.md](CONTRIBUTING.md) and our [Code of Conduct](CODE_OF
 
 ## Security
 
+**The database on the phone is not encrypted yet** (planned next). Use demo data only until it
+is. Android backup of the database is switched off.
+
 Please don't report security problems in public issues. See [SECURITY.md](SECURITY.md).
 
 ## Maintainers
 
-Built by [Research Code Respond](#) — Kevin Ziyada Aseru and Julian Zaabu Kayikayi.
+Built by Research Code Respond — Kevin Ziyada Aseru and Julian Zaabu Kayikayi.
+Contact: akevinziyada@researchcoderespond.org.
 
 ## Licence
 
-To be decided before the first public release (MIT or Apache-2.0).
+[MIT](LICENSE).

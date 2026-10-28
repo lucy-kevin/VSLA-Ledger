@@ -1,6 +1,19 @@
 import 'package:vsla_ledger/core/database/app_database.dart';
 import 'package:vsla_ledger/core/sync/ledger_remote.dart';
 
+/// How a sync ended.
+enum SyncResult {
+  /// Everything waiting was sent, and new records were fetched.
+  ok,
+
+  /// The server could not be reached (or answered with an error). Try again
+  /// later.
+  unreachable,
+
+  /// The server was reached but refused at least one record.
+  refused,
+}
+
 /// Moves records between the phone and the server.
 ///
 /// One sync: push the outbox in batches, then pull what other phones have
@@ -17,18 +30,18 @@ class SyncService {
   final AppDatabase _db;
   final LedgerRemote _remote;
 
-  Future<bool>? _running;
+  Future<SyncResult>? _running;
   bool _runAgain = false;
 
   /// Runs one sync. Only one sync runs at a time.
   ///
-  /// Returns true if everything was sent and fetched, false if the server
-  /// could not be reached or refused something. Either way nothing is lost.
+  /// Says whether everything was sent and fetched, the server could not be
+  /// reached, or the server refused something. Either way nothing is lost.
   ///
   /// If a sync is already running, this waits for it, and makes it go round
   /// once more at the end, so a record saved during a sync is not left
   /// behind until the next one.
-  Future<bool> run() {
+  Future<SyncResult> run() {
     final running = _running;
     if (running != null) {
       _runAgain = true;
@@ -37,20 +50,39 @@ class SyncService {
     return _running = _runUntilNothingNew().whenComplete(() => _running = null);
   }
 
-  Future<bool> _runUntilNothingNew() async {
-    bool succeeded;
+  Future<SyncResult> _runUntilNothingNew() async {
+    SyncResult result;
     do {
       _runAgain = false;
-      succeeded = await _push() && await _pull();
+      result = await _once();
     } while (_runAgain);
-    return succeeded;
+    return result;
   }
 
-  /// Returns false if the server could not be reached or refused something.
-  Future<bool> _push() async {
+  Future<SyncResult> _once() async {
+    final pushed = await _push();
+    // No point asking for more when the server cannot be reached.
+    if (pushed == SyncResult.unreachable) return pushed;
+
+    // A refused record must not stop us hearing from other phones, so the
+    // pull runs even when the push was only partly accepted.
+    final pulled = await _pull();
+    if (pulled == SyncResult.unreachable) return pulled;
+    return pushed;
+  }
+
+  Future<SyncResult> _push() async {
+    // Refused in this sync: leave them out of the next batches, so the rest
+    // of the queue still goes up.
+    final refusedIds = <int>[];
     while (true) {
-      final batch = await _db.outboxDao.nextBatch(limit: batchSize);
-      if (batch.isEmpty) return true;
+      final batch = await _db.outboxDao.nextBatch(
+        limit: batchSize,
+        exclude: refusedIds,
+      );
+      if (batch.isEmpty) {
+        return refusedIds.isEmpty ? SyncResult.ok : SyncResult.refused;
+      }
 
       final Set<int> accepted;
       try {
@@ -59,26 +91,26 @@ class SyncService {
         for (final item in batch) {
           await _db.outboxDao.recordFailure(item.id, error.toString());
         }
-        return false;
+        return SyncResult.unreachable;
       }
 
       await _db.outboxDao.removeSent(accepted.toList());
       final refused = batch.where((item) => !accepted.contains(item.id));
       for (final item in refused) {
-        await _db.outboxDao.recordFailure(item.id, 'Refused by the server');
+        await _db.outboxDao.recordRefusal(item.id);
+        refusedIds.add(item.id);
       }
-      // Stop rather than send the same refused items again in a loop.
-      if (refused.isNotEmpty) return false;
+      // Refused items are tried again at the next sync, up to
+      // [maxRefusals] times.
     }
   }
 
-  /// Returns false if any group could not be fetched.
-  Future<bool> _pull() async {
-    var succeeded = true;
+  Future<SyncResult> _pull() async {
+    var result = SyncResult.ok;
     for (final group in await _db.groupDao.getAllGroups()) {
-      if (!await _pullGroup(group.id)) succeeded = false;
+      if (!await _pullGroup(group.id)) result = SyncResult.unreachable;
     }
-    return succeeded;
+    return result;
   }
 
   Future<bool> _pullGroup(String groupId) async {

@@ -1,10 +1,13 @@
 import 'package:go_router/go_router.dart';
+import 'package:vsla_ledger/app/backend.dart';
 import 'package:vsla_ledger/core/models/entry_type.dart';
+import 'package:vsla_ledger/features/demo/compare_screen.dart';
 import 'package:vsla_ledger/features/groups/create_group_screen.dart';
 import 'package:vsla_ledger/features/groups/group_screen.dart';
 import 'package:vsla_ledger/features/groups/groups_screen.dart';
 import 'package:vsla_ledger/features/groups/join_group_screen.dart';
 import 'package:vsla_ledger/features/ledger/record_entry_screen.dart';
+import 'package:vsla_ledger/features/meeting/meeting_screen.dart';
 import 'package:vsla_ledger/features/members/add_member_screen.dart';
 import 'package:vsla_ledger/features/members/member_screen.dart';
 
@@ -14,10 +17,12 @@ import 'package:vsla_ledger/features/members/member_screen.dart';
 ///   /groups/new                              create a group
 ///   /groups/join                             join a group by its code
 ///   /groups/:groupId                         one group and its members
+///   /groups/:groupId/meeting                 run a meeting
 ///   /groups/:groupId/members/new             add a member
 ///   /groups/:groupId/members/:memberId       one member's balance and history
-///   .../members/:memberId/contribute|lend|repay   record an entry
-GoRouter createRouter() => GoRouter(
+///   .../members/:memberId/contribute|lend|repay|social-fund|fine  record
+///   .../members/:memberId/compare            talk demo only (DEMO=true)
+GoRouter createRouter({required bool withDemoScreens}) => GoRouter(
   routes: [
     GoRoute(
       path: '/',
@@ -39,6 +44,11 @@ GoRouter createRouter() => GoRouter(
               GroupScreen(groupId: state.pathParameters['groupId']!),
           routes: [
             GoRoute(
+              path: 'meeting',
+              builder: (context, state) =>
+                  MeetingScreen(groupId: state.pathParameters['groupId']!),
+            ),
+            GoRoute(
               path: 'members/new',
               builder: (context, state) =>
                   AddMemberScreen(groupId: state.pathParameters['groupId']!),
@@ -54,6 +64,8 @@ GoRouter createRouter() => GoRouter(
                   ('contribute', EntryType.contribution),
                   ('lend', EntryType.loan),
                   ('repay', EntryType.repayment),
+                  ('social-fund', EntryType.socialFund),
+                  ('fine', EntryType.fine),
                 ])
                   GoRoute(
                     path: path,
@@ -61,6 +73,15 @@ GoRouter createRouter() => GoRouter(
                       groupId: state.pathParameters['groupId']!,
                       memberId: state.pathParameters['memberId']!,
                       type: type,
+                    ),
+                  ),
+                if (withDemoScreens)
+                  GoRoute(
+                    path: 'compare',
+                    builder: (context, state) => CompareScreen(
+                      groupId: state.pathParameters['groupId']!,
+                      memberId: state.pathParameters['memberId']!,
+                      slowNetworkDelay: demoDelay,
                     ),
                   ),
               ],

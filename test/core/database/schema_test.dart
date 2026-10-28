@@ -25,7 +25,7 @@ void main() {
     expect(triggers, ['ledger_entries_no_delete', 'ledger_entries_no_update']);
   });
 
-  test('the schema version is 1', () {
-    expect(db.schemaVersion, 1);
+  test('the schema version is 2', () {
+    expect(db.schemaVersion, 2);
   });
 }

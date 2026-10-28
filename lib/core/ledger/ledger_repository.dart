@@ -14,6 +14,10 @@ import 'package:vsla_ledger/core/models/outbox_item.dart';
 /// Every method checks the ledger rules, then saves the entry and its outbox
 /// item in one database transaction. Either both are saved or neither is,
 /// so a record can never be on the phone without being queued for sync.
+///
+/// Every method takes an optional `meetingDate`: the day of the meeting the
+/// record belongs to. Left out, it is today. It cannot be after today, or
+/// before the day the group was made.
 class LedgerRepository {
   LedgerRepository({
     required AppDatabase db,
@@ -31,42 +35,118 @@ class LedgerRepository {
   final String Function() _newId;
 
   /// A member saves money with the group.
+  ///
+  /// In a group that saves in shares (the group has a share price), give
+  /// [shares] and leave [amountUgx] out: the amount is shares times the
+  /// price. Otherwise give [amountUgx] and no shares.
   Future<LedgerEntry> recordContribution({
     required String groupId,
     required String memberId,
+    int? amountUgx,
+    int? shares,
+    DateTime? meetingDate,
+  }) async {
+    final group = await _db.groupDao.getGroup(groupId);
+    final price = group?.sharePriceUgx ?? 0;
+    final savesInShares = price > 0;
+
+    if (savesInShares && shares == null) {
+      throw const LedgerRuleBroken(LedgerRule.sharesRequired);
+    }
+    if (!savesInShares && shares != null) {
+      throw const LedgerRuleBroken(LedgerRule.groupHasNoShares);
+    }
+    if (savesInShares && (shares! < 1 || shares > maxSharesPerMeeting)) {
+      throw const LedgerRuleBroken(LedgerRule.tooManyShares);
+    }
+    if (!savesInShares && amountUgx == null) {
+      throw const LedgerRuleBroken(LedgerRule.amountMustBePositive);
+    }
+
+    return _append(
+      groupId: groupId,
+      memberId: memberId,
+      type: EntryType.contribution,
+      amountUgx: savesInShares ? shares! * price : amountUgx!,
+      meetingDate: meetingDate,
+      shares: shares,
+      checkBeforeSaving: savesInShares
+          ? () => _checkSharesForMeeting(
+              memberId,
+              shares!,
+              _meetingDay(meetingDate),
+            )
+          : null,
+    );
+  }
+
+  /// A member pays into the group's social fund.
+  Future<LedgerEntry> recordSocialFund({
+    required String groupId,
+    required String memberId,
     required int amountUgx,
+    DateTime? meetingDate,
   }) => _append(
     groupId: groupId,
     memberId: memberId,
-    type: EntryType.contribution,
+    type: EntryType.socialFund,
     amountUgx: amountUgx,
+    meetingDate: meetingDate,
   );
 
-  /// The group lends money to a member.
+  /// A member pays a fine.
+  Future<LedgerEntry> recordFine({
+    required String groupId,
+    required String memberId,
+    required int amountUgx,
+    DateTime? meetingDate,
+  }) => _append(
+    groupId: groupId,
+    memberId: memberId,
+    type: EntryType.fine,
+    amountUgx: amountUgx,
+    meetingDate: meetingDate,
+  );
+
+  /// The group lends money to a member. The group's service charge is copied
+  /// onto the loan now, so changing it later never alters this loan.
   Future<LedgerEntry> issueLoan({
     required String groupId,
     required String memberId,
     required int amountUgx,
-  }) => _append(
-    groupId: groupId,
-    memberId: memberId,
-    type: EntryType.loan,
-    amountUgx: amountUgx,
-  );
+    DateTime? meetingDate,
+  }) async {
+    final group = await _db.groupDao.getGroup(groupId);
+    return _append(
+      groupId: groupId,
+      memberId: memberId,
+      type: EntryType.loan,
+      amountUgx: amountUgx,
+      meetingDate: meetingDate,
+      monthlyChargePercent: group?.monthlyChargePercent,
+    );
+  }
 
-  /// A member pays back part or all of a loan.
+  /// A member pays back part or all of a loan (charges first, then the loan).
   Future<LedgerEntry> recordRepayment({
     required String groupId,
     required String memberId,
     required String loanId,
     required int amountUgx,
+    DateTime? meetingDate,
   }) => _append(
     groupId: groupId,
     memberId: memberId,
     type: EntryType.repayment,
     amountUgx: amountUgx,
     loanId: loanId,
-    checkBeforeSaving: () => _checkLoanCanBeRepaid(loanId, memberId, amountUgx),
+    meetingDate: meetingDate,
+    checkBeforeSaving: () => _checkLoanCanBeRepaid(
+      loanId,
+      memberId,
+      amountUgx,
+      _meetingDay(meetingDate),
+    ),
   );
 
   /// Cancels a wrong entry by adding a correction that points at it.
@@ -89,6 +169,12 @@ class LedgerRepository {
     );
   }
 
+  /// Today, by the phone's calendar.
+  DateTime get _today => dateOnly(_now().toLocal());
+
+  DateTime _meetingDay(DateTime? chosen) =>
+      chosen == null ? _today : dateOnly(chosen);
+
   Future<LedgerEntry> _append({
     required String groupId,
     required String memberId,
@@ -96,9 +182,14 @@ class LedgerRepository {
     required int amountUgx,
     String? loanId,
     String? correctsEntryId,
+    DateTime? meetingDate,
+    int? shares,
+    int? monthlyChargePercent,
     Future<void> Function()? checkBeforeSaving,
   }) async {
     _checkAmount(amountUgx);
+    final meetingDay = _meetingDay(meetingDate);
+    await _checkMeetingDay(groupId, meetingDay);
 
     final entry = LedgerEntry(
       id: _newId(),
@@ -110,6 +201,9 @@ class LedgerRepository {
       deviceId: _deviceId,
       loanId: loanId,
       correctsEntryId: correctsEntryId,
+      meetingDate: meetingDay,
+      shares: shares,
+      monthlyChargePercent: monthlyChargePercent,
     );
 
     // The checks run inside the transaction, so nothing can change between
@@ -136,20 +230,54 @@ class LedgerRepository {
     }
   }
 
+  /// A meeting is not in the future, and not before the group existed.
+  Future<void> _checkMeetingDay(String groupId, DateTime meetingDay) async {
+    if (meetingDay.isAfter(_today)) {
+      throw const LedgerRuleBroken(LedgerRule.meetingDateInFuture);
+    }
+    final group = await _db.groupDao.getGroup(groupId);
+    if (group != null &&
+        meetingDay.isBefore(dateOnly(group.createdAt.toLocal()))) {
+      throw const LedgerRuleBroken(LedgerRule.meetingDateBeforeGroup);
+    }
+  }
+
+  /// A member buys at most [maxSharesPerMeeting] shares at one meeting.
+  Future<void> _checkSharesForMeeting(
+    String memberId,
+    int shares,
+    DateTime meetingDay,
+  ) async {
+    final entries = await _db.ledgerDao.getEntriesForMember(memberId);
+    final alreadyBought = entriesThatCount(entries)
+        .where(
+          (e) => e.type == EntryType.contribution && e.meetingDay == meetingDay,
+        )
+        .fold(0, (sum, e) => sum + (e.shares ?? 0));
+    if (alreadyBought + shares > maxSharesPerMeeting) {
+      throw const LedgerRuleBroken(LedgerRule.tooManyShares);
+    }
+  }
+
   Future<void> _checkLoanCanBeRepaid(
     String loanId,
     String memberId,
     int amountUgx,
+    DateTime meetingDay,
   ) async {
     final loan = await _db.ledgerDao.getEntry(loanId);
     if (loan == null) throw const LedgerRuleBroken(LedgerRule.entryNotFound);
     if (loan.type != EntryType.loan || loan.memberId != memberId) {
       throw const LedgerRuleBroken(LedgerRule.notALoanOfThisMember);
     }
+    if (meetingDay.isBefore(loan.meetingDay)) {
+      throw const LedgerRuleBroken(LedgerRule.repaymentBeforeLoan);
+    }
     final status = await _statusOf(loan);
     if (status == null) {
       throw const LedgerRuleBroken(LedgerRule.loanIsCancelled);
     }
+    // What is owed includes the service charge built up so far.
     if (amountUgx > status.owedUgx) {
       throw const LedgerRuleBroken(LedgerRule.repaymentMoreThanOwed);
     }
@@ -174,6 +302,7 @@ class LedgerRepository {
     final entries = await _db.ledgerDao.getEntriesForMember(loan.memberId);
     return loanStatuses(
       entries,
+      today: _today,
     ).where((status) => status.loan.id == loan.id).firstOrNull;
   }
 }

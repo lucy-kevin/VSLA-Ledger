@@ -8,6 +8,8 @@ String entryTypeLabel(AppLocalizations l10n, EntryType type) => switch (type) {
   EntryType.loan => l10n.entryTypeLoan,
   EntryType.repayment => l10n.entryTypeRepayment,
   EntryType.correction => l10n.entryTypeCorrection,
+  EntryType.socialFund => l10n.entryTypeSocialFund,
+  EntryType.fine => l10n.entryTypeFine,
 };
 
 /// The message shown when the app refuses a write. Adding a new rule without
@@ -23,4 +25,10 @@ String ledgerRuleMessage(AppLocalizations l10n, LedgerRule rule) =>
       LedgerRule.alreadyCancelled => l10n.ruleAlreadyCancelled,
       LedgerRule.cannotCancelACorrection => l10n.ruleCannotCancelACorrection,
       LedgerRule.loanHasRepayments => l10n.ruleLoanHasRepayments,
+      LedgerRule.meetingDateInFuture => l10n.ruleMeetingDateInFuture,
+      LedgerRule.meetingDateBeforeGroup => l10n.ruleMeetingDateBeforeGroup,
+      LedgerRule.repaymentBeforeLoan => l10n.ruleRepaymentBeforeLoan,
+      LedgerRule.sharesRequired => l10n.ruleSharesRequired,
+      LedgerRule.groupHasNoShares => l10n.ruleGroupHasNoShares,
+      LedgerRule.tooManyShares => l10n.ruleTooManyShares(maxSharesPerMeeting),
     };

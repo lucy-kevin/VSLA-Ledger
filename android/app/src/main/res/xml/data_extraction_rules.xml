@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Savings records belong to real people. They must never be copied off the
+  phone by Android's backup (to a Google account) or by phone-to-phone
+  transfer. The app's database lives in app_flutter/. Used on Android 12+.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" path="app_flutter/" />
+        <exclude domain="database" path="." />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" path="app_flutter/" />
+        <exclude domain="database" path="." />
+    </device-transfer>
+</data-extraction-rules>

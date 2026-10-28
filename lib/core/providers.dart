@@ -33,6 +33,17 @@ String deviceId(Ref ref) => throw UnimplementedError('Overridden in main.dart');
 LedgerRemote ledgerRemote(Ref ref) =>
     throw UnimplementedError('Overridden in main.dart');
 
+/// Talk demo only: show the Compare screen (lib/features/demo/). main.dart
+/// sets it from `--dart-define=DEMO=true`; tests switch it on directly.
+@Riverpod(keepAlive: true)
+bool showDemoScreens(Ref ref) => false;
+
+/// True when the app is using the in-app fake server (`BACKEND=fake`). Then
+/// nothing leaves the phone, and the app says so on every screen. main.dart
+/// sets it; tests switch it on directly.
+@Riverpod(keepAlive: true)
+bool usesFakeBackend(Ref ref) => false;
+
 // --- Writing -----------------------------------------------------------------
 
 @Riverpod(keepAlive: true)
@@ -100,6 +111,11 @@ Stream<List<Member>> members(Ref ref, String groupId) =>
 Stream<Member?> member(Ref ref, String memberId) =>
     ref.watch(appDatabaseProvider).memberDao.watchMember(memberId);
 
+/// Every entry of a group, including corrections (for the meeting screen).
+@riverpod
+Stream<List<LedgerEntry>> groupEntries(Ref ref, String groupId) =>
+    ref.watch(appDatabaseProvider).ledgerDao.watchEntriesForGroup(groupId);
+
 @riverpod
 Stream<List<EntryLine>> memberHistory(Ref ref, String memberId) =>
     ref.watch(appDatabaseProvider).ledgerDao.watchHistoryForMember(memberId);
@@ -115,6 +131,11 @@ Stream<Balance> memberBalance(Ref ref, String memberId) =>
 @riverpod
 Stream<Balance> groupBalance(Ref ref, String groupId) =>
     ref.watch(appDatabaseProvider).ledgerDao.watchGroupBalance(groupId);
+
+/// Records the server keeps refusing. They stay on the phone.
+@riverpod
+Stream<int> stuckRecords(Ref ref) =>
+    ref.watch(appDatabaseProvider).outboxDao.watchStuckCount();
 
 @riverpod
 Stream<int> recordsWaitingToSync(Ref ref) =>

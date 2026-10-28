@@ -7,7 +7,14 @@ void main() {
     () {
       expect(
         EntryType.values.map((type) => type.name),
-        ['contribution', 'loan', 'repayment', 'correction'],
+        [
+          'contribution',
+          'loan',
+          'repayment',
+          'correction',
+          'socialFund',
+          'fine',
+        ],
       );
     },
   );

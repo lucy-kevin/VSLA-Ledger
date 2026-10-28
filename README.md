@@ -1,7 +1,7 @@
 # VSLA Ledger
 
 An open-source, **offline-first** Flutter app for Village Savings and Loan Associations.
-
+<img width="2044" height="1928" alt="Frame 172" src="https://github.com/user-attachments/assets/c666cf03-d6fe-4ee8-8c97-15c70c977bd9" />
 A treasurer records weekly savings, loans and repayments on a phone — even with no signal.
 Records are saved on the phone first and sync to a server when a connection appears. Nothing
 is lost, and no single cloud company owns the data.
